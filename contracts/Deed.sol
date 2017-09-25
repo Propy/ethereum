@@ -135,19 +135,11 @@ contract Deed is Owned {
     BuyerWalletChanged(buyer_wallet);
   }
 
-  // ---------------------------------------------------------------------------
-  // Update deed
-  // can only be updated by with valid agentId
-  /*function deedSign(string _date) {
-    require (agentId == msg.sender);
-    signed = _date;
-  }*/
 
   //Fallback to receive Ether from any wallet as a payment
   function () payable {
     require (msg.sender == buyer_wallet);
     require (status == Status.payment);
-  //  require (this.balance + msg.value <= price);
     PaymentReceived(msg.value, msg.sender);
     if(this.balance>=price){
       status = Status.paymentDone;
@@ -165,7 +157,6 @@ contract Deed is Owned {
     Property prop = Property(propertyId);
     prop.rejectOwnershipTransfer();
     //release money for buyer's account
-    //
     pendingWithdrawals[buyer_wallet] += this.balance;
     status=Status.titleTransferDone;
     StatusUpdate(status);
@@ -183,19 +174,18 @@ contract Deed is Owned {
     metaTDLocal = _localHash;
     titleTransferStatus=TitleTransferStatus.approved;
     //**********
-    //transfer 100 PRO tokens
+    //transfer 100 PRO tokens comission
     uint256 companyComission=comissionCalc.getCompanyComission(price);
     uint256 networkGrowthComission=comissionCalc.getNetworkGrowthComission(price);
     require(propyToken.balanceOf(buyerId)>=companyComission+networkGrowthComission);
     assert (propyToken.transferFrom(buyerId, propyCompanyWallet, companyComission));
     assert (propyToken.transferFrom(buyerId, propyNetworkGrowthPoolWallet, networkGrowthComission));
     PropyComission(address(this),companyComission,networkGrowthComission);
-    //updates the power of the property
+    //updates the owner of the property
     Property prop = Property(propertyId);
     prop.approveOwnershipTransfer(buyerId);
     status=Status.titleDeedAppoved;
     StatusUpdate(status);
-    //**********
     // release contract money to seller
     pendingWithdrawals[seller_wallet] += this.balance;
     status=Status.titleTransferDone;
@@ -211,30 +201,6 @@ contract Deed is Owned {
         status = Status.withdrawalDone;
         StatusUpdate(status);
   }
-
-
-  /*//update the distributed variable
-  function deedDistribute(string _date) {
-    if (agentId != msg.sender) throw;
-    distributed = _date;
-  }*/
-
-  // create PA & TD
-  /*function deedPA(string _pa) {
-    require (agentId == msg.sender);
-    metaPA = _pa;
-  }*/
-
-  /*// create PA & TD
-  function documentSaveTitleDeedLocal(string _hash) {
-    if (agentId != msg.sender) throw;
-    metaTDLocal = _hash;
-  }*/
-
-  /*function deedmetaTD(string _td) {
-    if (agentId != msg.sender) throw;
-    metaTD = _td;
-  }*/
 
   // sign PA
   function sign(string _hash) returns (bool) {
@@ -259,58 +225,6 @@ contract Deed is Owned {
     return true;
   }
 
-  /*function setStatus(uint _status) returns (bool) {
-    require (agentId == msg.sender);
-    // if (_status < 0 || _status > 5) throw;
-    Status _temp = Status(_status);
-    require (_temp != Status.reserve) ;
-    require (_temp != Status.sellerInvited) ;
-    require (_temp != Status.agentInvited) ;
-    status = _temp;
-    StatusUpdate(status);
-    updatedAt = now;
-    return true;
-  }*/
-
-  /*function sendInviteToSeller() returns (bool) {
-    if (brokerId != msg.sender) throw;
-        //update status to show that Seller invite is pending response
-    status = Status.sellerInvited;
-    updatedAt = now;
-    return true;
-  }*/
-
-  /*function sendInviteToEscrowAgent() returns (bool) {
-    if (brokerId != msg.sender) throw;
-    //update status to show that Escrow Agent invite is pending response
-    status = Status.agentInvited;
-    updatedAt = now;
-    return true;
-  }*/
-
-  /*function confirmSeller() returns (bool) {
-    if (selledId != msg.sender) throw;
-    //validate the Seller
-    invitedSeller = true;
-    updatedAt = now;
-    return true;
-  }*/
-
-  /*function confirmEscrowAgent() returns (bool) {
-    if (agentId != msg.sender) throw;
-    //validate the Escrow Agent
-    invitedEscrowAgent = true;
-    updatedAt = now;
-    return true;
-  }*/
-
-  /*function setInspector(address _inspectorId) onlyContractOwner() returns (bool) {
-    inspectorId = _inspectorId;
-    updatedAt = now;
-    return true;
-  }*/
-
-  // ---------------------------------------------------------------------------
   // Kill contract
   function kill() onlySuperUsers() {
    if (msg.sender == contractOwner || msg.sender == deedCreatorAddress){
