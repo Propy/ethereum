@@ -4,33 +4,42 @@ import "./Owned.sol";
 
 contract Property is Owned {
 
-  enum Status { registered, pending }
+  enum Status { approved, pending }
 
-  address public ownerId; //sellerId
-
-  Status public status;
+  address public titleOwnerId; //sellerId
 
   string public name;
-  string public addr;
+  string public physAddr;
   string public description;
   string public url;
   string public meta;
+  uint public area;
 
-  uint public price;
+   // pending status ownership owner
+  address public pendingStatusOwnerDeed;
+  Status public status;
 
-  uint public createdAt;
-  uint public updatedAt;
   //This event is called when the Property Owner is updated for updating DApp UI
-  event PropertyOwnerChanged(address ownerAddress);
+  event PropertyOwnerChanged(address _propertyAddress, address _ownerAddress);
+  event PropertyStatusChanged(address _propertyAddress, Status _status);
 
   // ---------------------------------------------------------------------------
   // Constuctor
   // For defining basic property metadata
-  function Property(address _ownerId, string _name) {
-    ownerId = _ownerId;
+  function Property(address _titleOwnerId, string _name, string _physAddr, uint _area) {
+    titleOwnerId = _titleOwnerId;
     name = _name;
-    createdAt = now;
-    status = Status.registered;
+    physAddr = _physAddr;
+    area = _area;
+    status = Status.approved;
+  }
+
+  function setPropertyToPendingState(address _pendingStatusOwnerDeed) onlyContractOwner() returns (bool){
+      require(status == Status.approved);
+      status = Status.pending;
+      pendingStatusOwnerDeed=_pendingStatusOwnerDeed;
+      PropertyStatusChanged(address(this), status);
+      return true;
   }
 
   // ---------------------------------------------------------------------------
@@ -38,34 +47,37 @@ contract Property is Owned {
   //
   function set(string _url) {
     // validate ownerId of property before any changes can be made
-    if (ownerId != msg.sender) throw;
+    require (titleOwnerId == msg.sender);
     url = _url;
-    updatedAt = now;
   }
 
   // ---------------------------------------------------------------------------
   // Get ownerId
   function getowner() constant returns (address) {
-    return ownerId;
+    return titleOwnerId;
   }
-
-  // ---------------------------------------------------------------------------
-  // Kill contract
-  function setPendingTransfer() {
-      status = Status.pending;
-  }
-
 
   // ---------------------------------------------------------------------------
   // Change Owner of Property
-  function setOwner(address _ownerId) {
+  function approveOwnershipTransfer(address _ownerId) {
       // Ensure that Property Status is in correct pending state
-      if(status != Status.pending)
-        throw;
-      ownerId = _ownerId;
-      updatedAt = now;
-      status = Status.registered;
-      PropertyOwnerChanged(_ownerId);
+      require(msg.sender == pendingStatusOwnerDeed);
+      require(status == Status.pending);
+      titleOwnerId = _ownerId;
+      status = Status.approved;
+      pendingStatusOwnerDeed=0;
+      PropertyOwnerChanged(address(this), _ownerId);
+      PropertyStatusChanged(address(this), status);
+  }
+
+  // Change Owner of Property
+  function rejectOwnershipTransfer() {
+      // Ensure that Property Status is in correct pending state
+      require(msg.sender == pendingStatusOwnerDeed);
+      require(status == Status.pending);
+      status = Status.approved;
+      pendingStatusOwnerDeed=0;
+      PropertyStatusChanged(address(this), status);
   }
 
   // ---------------------------------------------------------------------------
@@ -79,7 +91,7 @@ contract Property is Owned {
   // ---------------------------------------------------------------------------
   // This unnamed function is called whenever someone tries to send ether to it
   function () {
-    throw;     // Prevents accidental sending of ether
+    revert();     // Prevents accidental sending of ether
   }
 
 }
