@@ -13,6 +13,4 @@
 `0x423e9135b3f5928bf1772928c228abc8ed63a8fa` : UsersRegistry
 `0x7671e1ca3fbda8a9caf7b2384aaefbc51ea6a7e9` : MultiEventsHistory
 
-
-
 ---
