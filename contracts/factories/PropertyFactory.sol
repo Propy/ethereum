@@ -2,11 +2,11 @@ pragma solidity 0.4.18;
 
 import "../disposable/Property.sol";
 import "../base/AddressChecker.sol";
-import "../base/Owned.sol";
-import '../adapters/MultiEventsHistoryAdapter.sol';
+import "../adapters/MultiEventsHistoryAdapter.sol";
+import "../adapters/RolesLibraryAdapter.sol";
 
 
-contract PropertyFactory is Owned, AddressChecker, MultiEventsHistoryAdapter {
+contract PropertyFactory is RolesLibraryAdapter, AddressChecker, MultiEventsHistoryAdapter {
 
     address public controller;
     address public proxy;
@@ -18,7 +18,9 @@ contract PropertyFactory is Owned, AddressChecker, MultiEventsHistoryAdapter {
 
     /// CONSTRUCTOR ///
 
-    function PropertyFactory(address _controller, address _proxy) {
+    function PropertyFactory(address _controller, address _proxy, address _rolesLibrary)
+        RolesLibraryAdapter(_rolesLibrary)
+    {
         assert(_controller != address(0) && _proxy != address(0));
         controller = _controller;
         proxy = _proxy;
@@ -26,7 +28,7 @@ contract PropertyFactory is Owned, AddressChecker, MultiEventsHistoryAdapter {
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) onlyContractOwner returns(bool) {
+    function setupEventsHistory(address _eventsHistory) auth returns(bool) {
       if (getEventsHistory() != 0x0) {
         return false;
       }
@@ -35,7 +37,7 @@ contract PropertyFactory is Owned, AddressChecker, MultiEventsHistoryAdapter {
     }
 
     function setController(address _controller)
-        onlyContractOwner
+        auth
         notNull(_controller)
     returns(bool) {
         if (controller == _controller) {
@@ -48,7 +50,7 @@ contract PropertyFactory is Owned, AddressChecker, MultiEventsHistoryAdapter {
     }
 
     function setProxy(address _proxy)
-        onlyContractOwner
+        auth
         notNull(_proxy)
     returns(bool) {
         proxy = _proxy;
@@ -84,7 +86,7 @@ contract PropertyFactory is Owned, AddressChecker, MultiEventsHistoryAdapter {
 
     /// RESTRICTIONS & DISASTER RECOVERY ///
 
-    function kill() public onlyContractOwner {
+    function kill() public auth {
         selfdestruct(msg.sender);
     }
 

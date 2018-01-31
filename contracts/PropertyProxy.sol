@@ -1,8 +1,8 @@
 pragma solidity 0.4.18;
 
 import "./base/AddressChecker.sol";
-import "./base/Owned.sol";
-import './adapters/MultiEventsHistoryAdapter.sol';
+import "./adapters/MultiEventsHistoryAdapter.sol";
+import "./adapters/RolesLibraryAdapter.sol";
 
 
 contract PropertyInterface {
@@ -11,14 +11,21 @@ contract PropertyInterface {
     function migrate(address) returns(bool);
 }
 
-contract PropertyProxy is Owned, AddressChecker, MultiEventsHistoryAdapter {
+contract PropertyProxy is RolesLibraryAdapter, AddressChecker, MultiEventsHistoryAdapter {
 
     address public controller;
 
+    function PropertyProxy(
+        address _controller,
+        address _rolesLibrary
+    ) RolesLibraryAdapter(_rolesLibrary) {
+        assert(_controller != address(0) && _rolesLibrary != address(0));
+        controller = _controller;
+    }
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) public onlyContractOwner returns(bool) {
+    function setupEventsHistory(address _eventsHistory) public auth returns(bool) {
         if (getEventsHistory() != 0x0) {
             return false;
         }
@@ -27,7 +34,7 @@ contract PropertyProxy is Owned, AddressChecker, MultiEventsHistoryAdapter {
     }
 
     function setController(address _controller)
-        onlyContractOwner
+        auth
         notNull(_controller)
     returns(bool) {
         if (controller == _controller) {
@@ -53,7 +60,7 @@ contract PropertyProxy is Owned, AddressChecker, MultiEventsHistoryAdapter {
     // Change `_property` contract ownership `_to` new version of PropertyProxy
     function forcePropertyChangeContractOwnership(address _property, address _to)
         public
-        onlyContractOwner
+        auth
     returns(bool) {
         // NOTE : Maybe better switch to `assert`
         if (_property == address(0) || _to == address(0)) {
@@ -71,7 +78,7 @@ contract PropertyProxy is Owned, AddressChecker, MultiEventsHistoryAdapter {
 
     /// RESTRICTIONS & DISASTER RECOVERY ///
 
-    function kill() public onlyContractOwner {
+    function kill() public auth {
         selfdestruct(msg.sender);
     }
 

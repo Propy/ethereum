@@ -2,8 +2,8 @@ pragma solidity 0.4.18;
 
 
 import "./base/AddressChecker.sol";
-import "./base/Owned.sol";
-import './adapters/MultiEventsHistoryAdapter.sol';
+import "./adapters/MultiEventsHistoryAdapter.sol";
+import "./adapters/RolesLibraryAdapter.sol";
 
 
 contract PropertyFactoryInterface {
@@ -53,7 +53,7 @@ contract UsersRegistryInterface {
 }
 
 
-contract PropertyController is Owned, MultiEventsHistoryAdapter {
+contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
 
     address public propertyProxy;
     address public propertyFactory;
@@ -70,12 +70,11 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     /// EVENTS ///
 
     event DeedReserved(address self, address deed, address property, address seller, address buyer, address escrow);
-    event DeedApproved(address self, address deed);
-
 
     /// CONSTRUCTOR ///
 
     function PropertyController(
+        address _rolesLibrary,
         address _propertyProxy,
         address _propertyFactory,
         address _propertyRegistry,
@@ -83,7 +82,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
         address _usersRegistry,
         address _tokenAddress,
         address _feeCalc
-    ) {
+    ) RolesLibraryAdapter(_rolesLibrary) {
         propertyProxy = _propertyProxy;
         propertyFactory = _propertyFactory;
         propertyRegistry = _propertyRegistry;
@@ -96,7 +95,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) public onlyContractOwner returns(bool) {
+    function setupEventsHistory(address _eventsHistory) public auth returns(bool) {
         if (getEventsHistory() != 0x0) {
             return false;
         }
@@ -105,7 +104,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     }
 
     function setPropertyProxy(address _propertyProxy)
-        onlyContractOwner
+        auth
         notNull(_propertyProxy)
     returns(bool) {
         _emitServiceChanged("PropertyProxy", propertyProxy, _propertyProxy);
@@ -114,7 +113,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     }
 
     function setPropertyFactory(address _propertyFactory)
-        onlyContractOwner
+        auth
         notNull(_propertyFactory)
     returns(bool) {
         _emitServiceChanged("PropertyFactory", propertyFactory, _propertyFactory);
@@ -123,7 +122,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     }
 
     function setPropertyRegistry(address _propertyRegistry)
-        onlyContractOwner
+        auth
         notNull(_propertyRegistry)
     returns(bool) {
         _emitServiceChanged("PropertyRegistry", propertyRegistry, _propertyRegistry);
@@ -132,7 +131,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     }
 
     function setDeedRegistry(address _deedRegistry)
-        onlyContractOwner
+        auth
         notNull(_deedRegistry)
     returns(bool) {
         _emitServiceChanged("DeedRegistry", deedRegistry, _deedRegistry);
@@ -141,7 +140,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     }
 
     function setUsersRegistry(address _usersRegistry)
-        onlyContractOwner
+        auth
         notNull(_usersRegistry)
     returns(bool) {
         _emitServiceChanged("UsersRegistry", usersRegistry, _usersRegistry);
@@ -150,7 +149,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     }
 
     function setToken(address _token)
-        onlyContractOwner
+        auth
         notNull(_token)
     returns(bool) {
         _emitServiceChanged("Token", token, _token);
@@ -159,7 +158,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     }
 
     function setFeeCalc(address _feeCalc)
-        onlyContractOwner
+        auth
         notNull(_feeCalc)
     returns(bool) {
         _emitServiceChanged("FeeCalc", feeCalc, _feeCalc);
@@ -171,7 +170,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
         address _companyWallet,
         address _networkGrowthPoolWallet
     )
-        onlyContractOwner
+        auth
     returns(bool) {
         require(_companyWallet != address(0) && _networkGrowthPoolWallet != address(0));
         companyWallet = _companyWallet;
@@ -191,7 +190,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
         address _previousVersion, address _owner, string _name, string _physicalAddress, uint8 _areaType, uint256 _area
     )
         public
-        onlyContractOwner
+        auth
     returns(bool) {
         address property = _createProperty(_previousVersion, _owner, _name, _physicalAddress, _areaType, _area);
         if (_previousVersion != address(0)) {
@@ -213,7 +212,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
         );
     }
 
-    function registerProperty(address _property) public onlyContractOwner returns(bool) {
+    function registerProperty(address _property) public auth returns(bool) {
         return _registerProperty(_property);
     }
 
@@ -227,7 +226,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
 
     // REMOVE / MIGRATE //
 
-    function removeProperty(address _property) public onlyContractOwner returns(bool) {
+    function removeProperty(address _property) public auth returns(bool) {
         return _removeProperty(_property, false);
     }
 
@@ -259,7 +258,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
         uint256[] _payments
     )
         public
-        onlyContractOwner
+        auth
         notNull(_deed)
         returns(bool)
     {
@@ -306,7 +305,7 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     /**
      * Save Deed address at the Deed Registry.
      */
-    function registerDeed(address _deed) public onlyContractOwner returns(bool) {
+    function registerDeed(address _deed) public auth returns(bool) {
         return _registerDeed(_deed);
     }
 
@@ -318,14 +317,14 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
     /**
      * Remove Deed address from the Deed Registry.
      */
-    function removeDeed(address _deed) public onlyContractOwner returns(bool) {
+    function removeDeed(address _deed) public auth returns(bool) {
         DeedRegistryInterface DeedRegistry = DeedRegistryInterface(deedRegistry);
         return DeedRegistry.remove(_deed);
     }
 
     function changeDeedIntermediary(address _deed, uint _intermediariesIndex, address _newActor)
         public
-        onlyContractOwner
+        auth
         notNull(_deed)
         notNull(_newActor)
     returns(bool) {
@@ -343,22 +342,14 @@ contract PropertyController is Owned, MultiEventsHistoryAdapter {
         PropertyController(getEventsHistory()).emitDeedReserved(_deed, _property, _seller, _buyer, _escrow);
     }
 
-    function _emitDeedApproved(address _deed) internal {
-        PropertyController(getEventsHistory()).emitDeedApproved(_deed);
-    }
-
 
     function emitDeedReserved(address _deed, address _property, address _seller, address _buyer, address _escrow) {
         DeedReserved(_self(), _deed, _property, _seller, _buyer, _escrow);
     }
 
-    function emitDeedApproved(address _deed) {
-        DeedApproved(_self(), _deed);
-    }
-
     /// RESTRICTIONS & DISASTER RECOVERY ///
 
-    function kill() public onlyContractOwner {
+    function kill() public auth {
         selfdestruct(msg.sender);
     }
 

@@ -1,12 +1,12 @@
 pragma solidity 0.4.18;
 
+import './adapters/MultiEventsHistoryAdapter.sol';
+import "./adapters/RolesLibraryAdapter.sol";
 import "./adapters/StorageAdapter.sol";
 import "./base/AddressChecker.sol";
-import "./base/Owned.sol";
-import './adapters/MultiEventsHistoryAdapter.sol';
 
 
-contract PropertyRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHistoryAdapter {
+contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryAdapter, RolesLibraryAdapter {
 
     address public controller;
 
@@ -26,8 +26,9 @@ contract PropertyRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsH
     function PropertyRegistry(
         Storage _store,
         bytes32 _crate,
-        address _controller
-    ) StorageAdapter(_store, _crate) {
+        address _controller,
+        address _rolesLibrary
+    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
         assert(_controller != address(0));
         controller = _controller;
 
@@ -38,9 +39,9 @@ contract PropertyRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsH
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) onlyContractOwner returns(bool) {
+    function setupEventsHistory(address _eventsHistory) auth returns(bool) {
       if (getEventsHistory() != 0x0) {
-        return false;
+          return false;
       }
       _setEventsHistory(_eventsHistory);
       return true;
@@ -48,7 +49,7 @@ contract PropertyRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsH
 
     function setController(address _controller)
         public
-        onlyContractOwner
+        auth
         notNull(_controller)
     returns(bool) {
         if (controller == _controller) {
@@ -78,7 +79,11 @@ contract PropertyRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsH
         return true;
     }
 
-    function remove(address _property, bool _migrated) public only(controller) notNull(_property) returns(bool success) {
+    function remove(address _property, bool _migrated)
+        public
+        only(controller)
+        notNull(_property)
+    returns(bool success) {
         if (relevant(_property)) {
             store.set(propertyExists, _property, false);
             success = true;
@@ -143,7 +148,7 @@ contract PropertyRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsH
 
     /// RESTRICTIONS & DISASTER RECOVERY ///
 
-    function kill() public onlyContractOwner {
+    function kill() public auth {
         selfdestruct(msg.sender);
     }
 

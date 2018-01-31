@@ -7,7 +7,6 @@ pragma solidity 0.4.18;
  *   - Expect calls from certain address with certain data and value.
  *   - Increment calls count on expected calls, emit UnexpectedCall event on unexpected calls.
  *   - Ignore calls with certain function signatures, returning the default value.
- *   - TODO: ability to return an arbitrary value with ignore callback
  */
 contract Mock {
 
@@ -50,6 +49,9 @@ contract Mock {
             return;
         }
         bytes32 result = expectations[nextExpectation++].callReturn;
+        if (result == bytes32("throw")) {
+            revert();
+        }
         assembly {
             mstore(0, result)
             return(0, 32)
@@ -82,6 +84,10 @@ contract Mock {
 
     function expect(address _from, uint _value, bytes _input, bytes32 _return) {
         expectations[++expectationsCount] = Expect(keccak256(_from, _value, _input), _return);
+    }
+
+    function popExpectation() {
+        expectations[expectationsCount--] = Expect(bytes32(0), bytes32(0));
     }
 
     function assertExpectations() constant {

@@ -60,7 +60,7 @@ contract Owned {
      *
      * @return success.
      */
-    function forceChangeContractOwnership(address _to) onlyContractOwner() returns(bool) {
+    function forceChangeContractOwnership(address _to) onlyContractOwner returns(bool) {
         contractOwner = _to;
         return true;
     }

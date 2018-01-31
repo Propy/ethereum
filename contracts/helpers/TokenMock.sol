@@ -2,7 +2,7 @@ pragma solidity 0.4.18;
 
 
 // For testing purposes.
-contract FakeCoin {
+contract TokenMock {
 
     mapping(address => uint) public balanceOf;
 
@@ -55,7 +55,7 @@ contract FakeCoin {
 
     function transfer(address _to, uint _value)
         maintenance()
-        //enoughCoins(msg.sender, _value)
+        enoughCoins(msg.sender, _value)
     returns(bool) {
         balanceOf[msg.sender] -= feeFromPayer ? _value + fee : _value;
         balanceOf[_to] += feeFromPayer ? _value : _value - fee;
@@ -64,7 +64,7 @@ contract FakeCoin {
 
     function transferFrom(address _from, address _to, uint _value)
         maintenance()
-        //enoughCoins(_from, _value)
+        enoughCoins(_from, _value)
     returns(bool) {
         if (!approvalMode) {
             balanceOf[_from] -= feeFromPayer ? _value + fee : _value;

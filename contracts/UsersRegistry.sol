@@ -2,11 +2,11 @@ pragma solidity 0.4.18;
 
 import "./adapters/StorageAdapter.sol";
 import "./base/AddressChecker.sol";
-import "./base/Owned.sol";
 import './adapters/MultiEventsHistoryAdapter.sol';
+import "./adapters/RolesLibraryAdapter.sol";
 
 
-contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHistoryAdapter {
+contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, MultiEventsHistoryAdapter {
 
     address public controller;
 
@@ -32,12 +32,6 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
 
     /// MODIFIERS ///
 
-    modifier allowedWriters() {
-        if (msg.sender == contractOwner || msg.sender == controller) {
-            _;
-        }
-    }
-
     modifier onlyWithRole(address _user) {
         if (store.get(role, _user) != 0) {
             _;
@@ -47,9 +41,12 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
 
     /// CONSTRUCTOR ///
 
-    function UsersRegistry(Storage _store, bytes32 _crate, address _controller)
-        StorageAdapter(_store, _crate)
-    {
+    function UsersRegistry(
+        Storage _store,
+        bytes32 _crate,
+        address _controller,
+        address _rolesLibrary
+    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
         assert(_controller != address(0));
         controller = _controller;
 
@@ -65,7 +62,7 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) onlyContractOwner returns(bool) {
+    function setupEventsHistory(address _eventsHistory) auth returns(bool) {
         if (getEventsHistory() != 0x0) {
             return false;
         }
@@ -74,7 +71,7 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
     }
 
     function setController(address _controller)
-        onlyContractOwner
+        auth
         notNull(_controller)
     returns(bool) {
         if (controller == _controller) {
@@ -90,7 +87,7 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
 
     /// MAIN FUNCTIONS ///
 
-    function defineRole(uint _role) public onlyContractOwner returns(bool) {
+    function defineRole(uint _role) public auth returns(bool) {
         store.set(roles, _role, true);
         _emitRoleDefined(_role);
         return true;
@@ -101,7 +98,7 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
         bytes32 _details, uint _role, address _wallet
     )
         public
-        allowedWriters()
+        auth
     returns(bool) {
         require(store.get(role, _user) == 0);  // User must not exist to be created
         return _set(_user, _firstname, _lastname, _details, _role, _wallet);
@@ -113,7 +110,7 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
         bytes32 _details, uint _role, address _wallet
     )
         public
-        allowedWriters()
+        auth
     returns(bool) {
         require(store.get(role, _user) != 0);  // User must exist to be updated
         return _set(_user, _firstname, _lastname, _details, _role, _wallet);
@@ -143,7 +140,7 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
         return true;
     }
 
-    function remove(address _user) public allowedWriters() returns(bool) {
+    function remove(address _user) public auth returns(bool) {
         store.set(firstname, _user, "");
         store.set(lastname, _user, "");
         store.set(details, _user, "");
@@ -268,7 +265,7 @@ contract UsersRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHist
 
     /// RESTRICTIONS & DISASTER RECOVERY ///
 
-    function kill() onlyContractOwner {
+    function kill() auth {
         selfdestruct(msg.sender);
     }
 

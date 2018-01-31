@@ -30,6 +30,7 @@ contract MetaDeedUkraine is MetaDeed {
 
         moves[uint8(MOVES.PURCHASE_AGREEMENT)].name = "Purchase Agreement";
         moves[uint8(MOVES.PURCHASE_AGREEMENT)].party = uint(PARTIES.SYSTEM);
+        moves[uint8(MOVES.PURCHASE_AGREEMENT)].args = 1;
         // Don't check the role 'cause we don't need it for system user
 
         moves[uint8(MOVES.PAYMENT)].name = "Payment";

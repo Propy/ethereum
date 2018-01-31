@@ -1,7 +1,7 @@
 pragma solidity 0.4.18;
 
 import "../base/Owned.sol";
-import "../helpers/Aux.sol";
+import "../helpers/AuxHelper.sol";
 import "../disposable/MetaDeedCalifornia.sol";
 import "../disposable/MetaDeedUkraine.sol";
 import "./BaseFactory.sol";

@@ -65,7 +65,6 @@ contract Property is Owned, AddressChecker {
         onlyContractOwner
         onlyStatus(Status.OWNED)
     returns(bool) {
-        return true;
         status = Status.PENDING;
         currentDeed = _deed;
         StatusChanged(address(this), uint8(status));

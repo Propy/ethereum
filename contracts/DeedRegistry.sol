@@ -2,11 +2,11 @@ pragma solidity 0.4.18;
 
 import "./adapters/StorageAdapter.sol";
 import "./base/AddressChecker.sol";
-import "./base/Owned.sol";
 import './adapters/MultiEventsHistoryAdapter.sol';
+import "./adapters/RolesLibraryAdapter.sol";
 
 
-contract DeedRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHistoryAdapter {
+contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, MultiEventsHistoryAdapter {
 
     address public controller;
 
@@ -24,8 +24,9 @@ contract DeedRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHisto
     function DeedRegistry(
         Storage _store,
         bytes32 _crate,
-        address _controller
-    ) StorageAdapter(_store, _crate) {
+        address _controller,
+        address _rolesLibrary
+    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
         assert(_controller != address(0));
         controller = _controller;
 
@@ -36,7 +37,7 @@ contract DeedRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHisto
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) onlyContractOwner returns(bool) {
+    function setupEventsHistory(address _eventsHistory) auth returns(bool) {
         if (getEventsHistory() != 0x0) {
             return false;
         }
@@ -45,7 +46,7 @@ contract DeedRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHisto
     }
 
     function setController(address _controller)
-        onlyContractOwner
+        auth
         notNull(_controller)
     returns(bool) {
         if (controller == _controller) {
@@ -125,7 +126,7 @@ contract DeedRegistry is Owned, AddressChecker, StorageAdapter, MultiEventsHisto
 
     /// RESTRICTIONS & DISASTER RECOVERY ///
 
-    function kill() public onlyContractOwner {
+    function kill() public auth {
         selfdestruct(msg.sender);
     }
 

@@ -1,7 +1,6 @@
 pragma solidity 0.4.18;
 
-//import './adapters/Roles2LibraryAdapter.sol';
-import "../base/Owned.sol";
+import '../adapters/RolesLibraryAdapter.sol';
 
 /**
  * @title Events History universal multi contract.
@@ -12,11 +11,11 @@ import "../base/Owned.sol";
  * Note: all the non constant functions return false instead of throwing in case if state change
  * didn't happen yet.
  */
-contract MultiEventsHistory is Owned {
+contract MultiEventsHistory is RolesLibraryAdapter {
     // Authorized calling contracts.
     mapping(address => bool) public isAuthorized;
 
-    //function MultiEventsHistory(address _roles2Library) Roles2LibraryAdapter(_roles2Library) {}
+    function MultiEventsHistory(address _rolesLibrary) RolesLibraryAdapter(_rolesLibrary) {}
 
     /**
      * Authorize new caller contract.
@@ -25,7 +24,7 @@ contract MultiEventsHistory is Owned {
      *
      * @return success.
      */
-    function authorize(address _caller) onlyContractOwner returns(bool) {
+    function authorize(address _caller) auth returns(bool) {
         if (isAuthorized[_caller]) {
             return false;
         }
