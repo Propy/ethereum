@@ -5,7 +5,7 @@ const { getTopics } = require('./helpers');
 
 const contracts = {
     Mock: artifacts.require('./Mock.sol'),
-    FakeCoin: artifacts.require('./FakeCoin.sol'),
+    TokenMock: artifacts.require('./TokenMock.sol'),
     ManagerMock: artifacts.require('./ManagerMock.sol'),
     StorageTester: artifacts.require('./StorageTester.sol'),
     DeployTest: artifacts.require('./DeployTest.sol'),
@@ -25,6 +25,7 @@ const contracts = {
     MetaDeedCalifornia: artifacts.require('./MetaDeedCalifornia.sol'),
     BaseDeed: artifacts.require('./BaseDeed.sol'),
     EscrowEther: artifacts.require('./EscrowEther.sol'),
+    EscrowOracle: artifacts.require('./EscrowOracle.sol'),
 }
 
 

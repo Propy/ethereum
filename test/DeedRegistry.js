@@ -4,27 +4,37 @@ const DeedRegistry = artifacts.require('./DeedRegistry');
 const MultiEventsHistory = artifacts.require('./MultiEventsHistory.sol');
 const Mock = artifacts.require('./Mock.sol');
 
-const Asserts = require('./helpers/asserts');
 const Reverter = require('./helpers/reverter');
 
-const { ZERO_ADDRESS, assertExpectations, assertLogs, equal, bytes32 } = require('./helpers/helpers');
+const { assertLogs, equal } = require('./helpers/assert');
+const { AssertExpectations, IgnoreAuth, ExpectAuth } = require('./helpers/mock');
 
 contract('DeedRegistry', function(accounts) {
     const reverter = new Reverter(web3);
     afterEach('revert', reverter.revert);
     
-    const asserts = Asserts(assert);
-    
     const owner = accounts[0];
     const unauthorized = accounts[2];
-    const controller = accounts[5];
+    const controller = accounts[1];
     
+    let assertExpectations;
+    let ignoreAuth;
+    let expectAuth;
+    
+    let mock;
     let deedRegistry;
     let multiEventsHistory;
     
     before('setup', async () => {
+        mock = await Mock.deployed();
         deedRegistry = await DeedRegistry.deployed();
         multiEventsHistory = await MultiEventsHistory.deployed();
+    
+        assertExpectations = AssertExpectations(mock);
+        ignoreAuth = IgnoreAuth(mock);
+        expectAuth = ExpectAuth(mock);
+    
+        await ignoreAuth(true);
         
         await deedRegistry.setupEventsHistory(MultiEventsHistory.address);
         await multiEventsHistory.authorize(deedRegistry.address);
@@ -47,31 +57,23 @@ contract('DeedRegistry', function(accounts) {
             assert.equal(currentProxy, controller);
         });
     
-        it('should return `true` when setting controller from owner', async () => {
-            const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
-            assert.isTrue(await deedRegistry.setController.call(newController, {from: owner}));
-        });
-    
-        it('should return `false` when setting controller from non-owner', async () => {
-            const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
-            assert.isFalse(await deedRegistry.setController.call(newController, {from: unauthorized}));
-        });
-    
-        it('should allow to set controller from owner', async () => {
-            const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
-            await deedRegistry.setController(newController, {from: owner});
+        it("should check auth when setting controller", async () => {
+            const caller = accounts[9];
+            const newController = accounts[8];
+        
+            await ignoreAuth(false);
+            await expectAuth(deedRegistry, caller, "setController");
+        
+            await deedRegistry.setController(newController, {from: caller});
+        
             const currentController = await deedRegistry.controller.call();
-            assert.equal(currentController, newController);
-        });
-    
-        it('should NOT allow to set controller from non-owner', async () => {
-            const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
-            await deedRegistry.setController(newController, {from: unauthorized});
-            const currentController = await deedRegistry.controller.call();
-            assert.equal(currentController, controller);
+        
+            equal(currentController, controller);
+        
+            await assertExpectations();
         });
         
-        it('should emit ServiceChanged after setting controller from owner', async () => {
+        it('should emit ServiceChanged after setting controller', async () => {
             const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
             let result = await deedRegistry.setController(newController, {from: owner});
             assertLogs(result.logs, [{
@@ -80,16 +82,10 @@ contract('DeedRegistry', function(accounts) {
                 args: {
                     self: deedRegistry.address,
                     name: 'Controller',
-                    oldAddress: accounts[5],
+                    oldAddress: controller,
                     newAddress: newController
                 }
             }]);
-        });
-    
-        it('should NOT emit ServiceChanged event in MultiEventsHistory after setting controller from non-owner', async () => {
-            const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
-            let result = await deedRegistry.setController(newController, {from: unauthorized});
-            assert.equal(result.logs.length, 0);
         });
     });
     

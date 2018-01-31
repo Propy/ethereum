@@ -1,3 +1,5 @@
+
+
 module.exports = assert => ({
     equal: (actual, expected) => {
         assert.equal(actual.valueOf(), expected.valueOf());
@@ -5,8 +7,24 @@ module.exports = assert => ({
     isTrue: assert.isTrue,
     isFalse: assert.isFalse,
     throws: promise => {
-        console.log(promise)
-        return promise.then(assert.fail, () => true);
+        return promise.then(
+            assert.fail,
+            (error) => {
+                console.error(error.message)
+                assert.isTrue(error.message.includes("assert"));
+                return true;
+            }
+        );
+    },
+    reverts: promise => {
+        return promise.then(
+            assert.fail,
+            (error) => {
+                console.error(error.message)
+                assert.isTrue(error.message.includes("revert"));
+                return true;
+            }
+        );
     },
     error: async (call, args) => {
         let success = false;
@@ -15,5 +33,12 @@ module.exports = assert => ({
             success = true;
         } catch (e) {}
         assert.equal(success, false);
+    },
+
+    compareBigNumberLists: (result, expected) => {
+        //console.log(result, expected);
+        for (let i in result) {
+            assert.equal(result[i].toString(), expected[i].toString());
+        }
     },
 });

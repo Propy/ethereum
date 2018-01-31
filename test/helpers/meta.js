@@ -7,6 +7,7 @@ module.exports = {
         "Broker": 4,
         "Notary": 8,
         "Title company agent": 16,
+        "User": 128,
     },
     networks: {
         live: {
@@ -19,20 +20,42 @@ module.exports = {
         },
         rinkeby: {
             contracts: {
-                DeedRegistry: {address: "0xb3ee9f63f2f21d959cde0cc46d82c2115da5da03"},
-                FakeCoin: {address: "0x0f973491a0dd905497005971565c9f57542384f9"},
-                FeeCalc: {address: "0x21115fa3281fefcc604471dfe94abc70a99577f7"},
-                PropertyController: {address: "0x08dd56f0be3d2b706f080a6f5d307e0cb48a1b36"},
-                PropertyFactory: {address: "0x885395f2ca0082e1b0e3da6f4bab195ec4b826b6"},
-                PropertyRegistry: {address: "0xd1a00fb6399c4cd4fe9a22bce2f1b66792c23c6c"},
-                PropertyProxy: {address: "0x41f7bb8450099c2be0dfcff2724ad25eca48c3e8"},
-                Storage: {address: "0xe027ffb02b99078cfc6683e4c38de16899945089"},
-                StorageInterface: {address: "0xf36d9a9488a1aa2c5756bca8c0a7d53576d4efd0"},
-                StorageManager: {address: "0xa5507c406372fdb9d47747e507387e7e026be8e3"},
-                UsersRegistry: {address: "0x423e9135b3f5928bf1772928c228abc8ed63a8fa"},
-                MultiEventsHistory: {address: "0x7671e1ca3fbda8a9caf7b2384aaefbc51ea6a7e9"},
+                PropertyController: {address: "0x18f83862e5be5eb393486f02c8d5281441b906ef"},
+                PropertyFactory: {address: "0x8633cd26dcff9be2ff4863f48cbe273eaca32124"},
+                PropertyProxy: {address: "0x18cca68335ebb0e141dc86c6ced099e84b8d4183"},
+                PropertyRegistry: {address: "0x39ce89943634dfcf99fa9a28d3ace7fa624d7d65"},
+                DeedRegistry: {address: "0x667b4a5310378e9bc2bc26a2c6e4172454414b6c"},
+                UsersRegistry: {address: "0x2495b156062c946f89707c28dc144291e6f59341"},
+                TokenMock: {address: "0x81f5cfbc0472e928e47f6b8eb40f296ed7cf10a7"},
+                FeeCalc: {address: "0xbf6d27ac2378022cc5ac9db57801db789bc2672d"},
+                MultiEventsHistory: {address: "0x15df06086a75b38a837f14ea3d550b89ed266641"},
+                Storage: {address: "0x11838e9e5ecd2f0a62b2a801fe18fa42c7dd93cb"},
+                StorageInterface: {address: "0xd2ca6faee806841cf07645806b992305eda2c9da"},
+                StorageManager: {address: "0x78f0be1d3ced872d6f300f831f59297215f8054f"},
+                RolesLibrary: {address: "0xabe108964278b97b94753c093bc518ea3e97ac20"},
+                MetaDeedCalifornia: {address: "0xca0bfcb480284aa89d10502639a56721557c28f1"},
+
+                MetaDeedUkraine: {address: "0x0"},
+
+                BaseDeed: {address: "0x0"},
+                EscrowEther: {address: "0x0"},
+                EscrowOracle: {address: "0x0"},
+                Property: {address: "0x0"},
             },
             parties: {
+                "Seller": {
+                    firstname: "Josh",
+                    lastname: "Healerson",
+                    role: "User",
+                    address: "0x65ddD5D4D698Bf801bf5613de51F963394Fb2749",
+                },
+                "Buyer": {
+                    firstname: "Sir",
+                    lastname: "Buy-a-Lot",
+                    role: "User",
+                    address: "0x252490Bbcf48C58c90F5489A2A5bA0B4cDC21947",
+                },
+
                 "Seller broker": {
                     firstname: "Mark",
                     lastname: "Doe",
@@ -57,7 +80,12 @@ module.exports = {
                     role: "Title company agent",
                     address: "0xc3b927ac0FBf4d6c81b8EE8fF08A59c221a1035d"
                 }
-            }
+            },
+            multiSigOwners: [
+                "0x65ddD5D4D698Bf801bf5613de51F963394Fb2749",
+                "0x8d15d0248a5ee8412710966Cc9c9b5A3211c7D7B",
+                "0xa8BC250DbC1dC0aCEDB05799989948C438be5D72",
+            ],
         }
     }
 

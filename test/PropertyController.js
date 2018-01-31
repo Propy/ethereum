@@ -2,7 +2,7 @@
 
 const BaseDeed = artifacts.require('./BaseDeed.sol');
 const DeedRegistry = artifacts.require('./DeedRegistry.sol');
-const FakeCoin = artifacts.require('./FakeCoin.sol');
+const TokenMock = artifacts.require('./TokenMock.sol');
 const FeeCalc = artifacts.require('./FeeCalc.sol');
 const Mock = artifacts.require('./Mock.sol');
 const Property = artifacts.require("./Property.sol");
@@ -14,18 +14,24 @@ const PropertyRegistryInterface = artifacts.require('./PropertyRegistryInterface
 const PropertyProxy = artifacts.require('./PropertyProxy.sol');
 const UsersRegistry = artifacts.require('./UsersRegistry.sol');
 const MultiEventsHistory = artifacts.require('./MultiEventsHistory.sol');
+const RolesLibrary = artifacts.require('./RolesLibrary.sol');
 
-const Asserts = require('./helpers/asserts');
 const Reverter = require('./helpers/reverter');
+const { AssertExpectations, IgnoreAuth, ExpectAuth } = require('./helpers/mock');
 
-const { ZERO_ADDRESS, assertExpectations, assertLogs, equal, bytes32 } = require('./helpers/helpers');
+
+const { assertLogs, equal } = require("./helpers/assert");
+const { ZERO_ADDRESS } = require("./helpers/constants");
+const { bytes32 } = require('./helpers/helpers');
 
 
 contract('PropertyController', function(accounts) {
     const reverter = new Reverter(web3);
     afterEach('revert', reverter.revert);
 
-    const asserts = Asserts(assert);
+    let assertExpectations;
+    let ignoreAuth;
+    let expectAuth;
 
     const baseDeedInterface = web3.eth.contract(BaseDeed.abi).at('0x0');
     const propertyFactoryInterface = web3.eth.contract(PropertyFactoryInterface.abi).at('0x0');
@@ -77,7 +83,7 @@ contract('PropertyController', function(accounts) {
         {
             nameLower: "token",
             nameUpper: "Token",
-            oldAddress: FakeCoin.address,
+            oldAddress: TokenMock.address,
             newAddress: newServiceAddress
         },
         {
@@ -90,6 +96,10 @@ contract('PropertyController', function(accounts) {
 
     const assertSetService = async (contract, services, from, success) => {
         for (let service of services) {
+            if (!success) {
+                await expectAuth(propertyController, from, 'set' + services.nameUpper);
+            }
+
             let result;
             result = await contract[service.nameLower]();
             equal(result, service.oldAddress);
@@ -112,6 +122,9 @@ contract('PropertyController', function(accounts) {
                     }
                 });
             }
+            else {
+                await assertExpectations();
+            }
 
             assertLogs(tx.logs, events);
         }
@@ -122,6 +135,12 @@ contract('PropertyController', function(accounts) {
         property = await Property.deployed();
         propertyController = await PropertyController.deployed();
         multiEventsHistory = await MultiEventsHistory.deployed();
+
+        assertExpectations = AssertExpectations(mock);
+        ignoreAuth = IgnoreAuth(mock);
+        expectAuth = ExpectAuth(mock);
+
+        await ignoreAuth(true);
 
         await propertyController.setupEventsHistory(MultiEventsHistory.address);
         await multiEventsHistory.authorize(propertyController.address);
@@ -139,13 +158,13 @@ contract('PropertyController', function(accounts) {
             await PropertyRegistry.deployed();
             await DeedRegistry.deployed();
             await UsersRegistry.deployed();
-            await FakeCoin.deployed();
+            await TokenMock.deployed();
             await FeeCalc.deployed();
 
             // Create new PropertyController instance with the given addresses
             const controller = await PropertyController.new(
-                PropertyProxy.address, PropertyFactory.address, PropertyRegistry.address,
-                DeedRegistry.address, UsersRegistry.address, FakeCoin.address, FeeCalc.address
+                Mock.address, PropertyProxy.address, PropertyFactory.address, PropertyRegistry.address,
+                DeedRegistry.address, UsersRegistry.address, TokenMock.address, FeeCalc.address
             );
 
             // Check all of the ecosystem attributes
@@ -161,14 +180,14 @@ contract('PropertyController', function(accounts) {
             result = await controller.usersRegistry.call();
             equal(result, UsersRegistry.address);
             result = await controller.token.call();
-            equal(result, FakeCoin.address);
+            equal(result, TokenMock.address);
             result = await controller.feeCalc.call();
             equal(result, FeeCalc.address);
         });
 
         it("should return `true` when setting the services by the authorized caller", async () => {
             for (let service of services) {
-                const result = await propertyController['set' + service.nameUpper].call(newServiceAddress, {from: owner});
+                const result = await propertyController['set' + service.nameUpper].call(newServiceAddress);
                 assert.isTrue(result);
             }
         });
@@ -178,28 +197,32 @@ contract('PropertyController', function(accounts) {
             await assertSetService(propertyController, services, owner, success);
         });
 
-        it("should return `false` when setting the services by the non-authorized caller", async () => {
-            for (let service of services) {
-                const result = await propertyController['set' + service.nameUpper].call(newServiceAddress, {from: unauthorized});
-                assert.isFalse(result);
-            }
-        });
+        it("should check auth when setting the services by the non-authorized caller", async () => {
+            await ignoreAuth(false);
 
-        it("should NOT be able to change the services by the non-authorized caller", async () => {
-            const success = false;
-            await assertSetService(propertyController, services, unauthorized, success);
+            for (let service of services) {
+                await expectAuth(propertyController, unauthorized, "set" + service.nameUpper);
+                const result = await propertyController['set' + service.nameUpper](
+                    newServiceAddress, {from: unauthorized}
+                );
+                assert.equal(result.logs.length, 0);
+
+                let currentService = await propertyController[service.nameLower].call();
+                assert.equal(currentService, service.oldAddress);
+            }
+            await assertExpectations();
         });
 
         it("should NOT be able to change services with null address", async () => {
             for (let service of services) {
-                const result = await propertyController['set' + service.nameUpper].call(ZERO_ADDRESS, {from: owner});
+                const result = await propertyController['set' + service.nameUpper].call(ZERO_ADDRESS);
                 assert.isFalse(result);
             }
         });
 
-        it('should emit ServiceChanged when setting from owner', async () => {
+        it('should emit ServiceChanged when setting services', async () => {
             for (let service of services) {
-                const result = await propertyController['set' + service.nameUpper](newServiceAddress, {from: owner});
+                const result = await propertyController['set' + service.nameUpper](newServiceAddress);
 
                 assertLogs(result.logs, [{
                     address: MultiEventsHistory.address,
@@ -212,18 +235,11 @@ contract('PropertyController', function(accounts) {
                 }]);
             }
         });
-
-        it('should NOT emit event when setting the services by the non-authorized caller', async () => {
-            for (let service of services) {
-                const result = await propertyController['set' + service.nameUpper](newServiceAddress, {from: unauthorized});
-                assert.equal(result.logs.length, 0);
-            }
-        });
     });
 
     describe("Create and register property", () => {
         
-        it('should return `true` when create and register property from owner', async () => {
+        it('should return `true` when create and register property', async () => {
             await mock.expect(
                 propertyController.address,
                 0,
@@ -241,42 +257,32 @@ contract('PropertyController', function(accounts) {
             );
 
             assert.isTrue(await propertyController.createAndRegisterProperty.call(
-                ZERO_ADDRESS, owner, "", "", 1, 1, {from: owner}
+                ZERO_ADDRESS, owner, "", "", 1, 1
             ));
         });
 
-        it('should return `false` when crate and register property from non-authorized caller', async () => {
-            assert.isFalse(await propertyController.createAndRegisterProperty.call(
-                ZERO_ADDRESS, owner, "", "", 1, 1, {from: unauthorized}
-            ));
-        });
-
-        it('should return `true` when register property from owner', async () => {
+        it('should return `true` when register property', async () => {
             let property = '0xffffff0fffffffffffffffffffffffffffffffff';
             assert.isTrue(await propertyController.registerProperty.call(
-                property, {from: owner}
+                property
             ));
         });
 
-        it('should return `false` when register property from non-authorized caller', async () => {
-            let property = '0xffffff0fffffffffffffffffffffffffffffffff';
-            assert.isFalse(await propertyController.registerProperty.call(
-                property, {from: unauthorized}
-            ));
-        });
-
-        it("should NOT create and register new property from non-authorized caller", async () => {
+        it("should check auth when creating and registering property", async () => {
+            await ignoreAuth(false);
 
             const result = await propertyController.createAndRegisterProperty.call(
-                ZERO_ADDRESS, owner, "", "", 1, 1, {from: unauthorized}
+                ZERO_ADDRESS, owner, "", "", 1, 1
             );
             assert.isFalse(result);
+
+            await expectAuth(propertyController, unauthorized, "createAndRegisterProperty");
 
             await propertyController.createAndRegisterProperty(
                 ZERO_ADDRESS, owner, "", "", 1, 1, {from: unauthorized}
             );
 
-            await assertExpectations(mock);
+            await assertExpectations();
         });
 
         it("should create and register new property from an authorized caller", async () => {
@@ -298,28 +304,27 @@ contract('PropertyController', function(accounts) {
             );
 
             const result = await propertyController.createAndRegisterProperty.call(
-                ZERO_ADDRESS, owner, "", "", 1, 1, {from: owner}
+                ZERO_ADDRESS, owner, "", "", 1, 1
             );
             assert.isTrue(result);
 
             await propertyController.createAndRegisterProperty(
-                ZERO_ADDRESS, owner, "", "", 1, 1, {from: owner}
+                ZERO_ADDRESS, owner, "", "", 1, 1
             );
 
-            await assertExpectations(mock);
+            await assertExpectations();
         });
 
-        it("should NOT register new property from non-authorized caller", async () => {
-            const result = await propertyController.registerProperty.call(
+        it("should check auth when registering property", async () => {
+            await ignoreAuth(false);
+
+            await expectAuth(propertyController, unauthorized, "registerProperty");
+
+            const result = await propertyController.registerProperty(
                 property.address, {from: unauthorized}
             );
-            assert.isFalse(result);
 
-            await propertyController.registerProperty(
-                property.address, {from: unauthorized}
-            );
-
-            await assertExpectations(mock);
+            await assertExpectations();
         });
 
         it("should register new property from an authorized caller", async () => {
@@ -333,15 +338,15 @@ contract('PropertyController', function(accounts) {
             );
 
             const result = await propertyController.registerProperty.call(
-                property.address, {from: owner}
+                property.address
             );
             assert.isTrue(result);
 
             await propertyController.registerProperty(
-                property.address, {from: owner}
+                property.address
             );
 
-            await assertExpectations(mock);
+            await assertExpectations();
         });
 
         it('should allow to migrate property');
@@ -349,21 +354,14 @@ contract('PropertyController', function(accounts) {
 
     describe("Remove property", () => {
 
-        it('should return `true` when remove property from owner', async () => {
+        it('should return `true` when remove property', async () => {
             let property = '0xffffffffffffffffffffffffffffffffffffffff';
             assert.isTrue(await propertyController.removeProperty.call(
-                property, {from: owner}
-            ));
-        });
-
-        it('should return `false` when remove property from non-authorized caller', async () => {
-            let property = '0xffffffffffffffffffffffffffffffffffffffff';
-            assert.isFalse(await propertyController.removeProperty.call(
-                property, {from: unauthorized}
+                property
             ));
         });
         
-        it('should allow to remove property from owner', async () => {
+        it('should allow to remove property', async () => {
             await mock.expect(
                 propertyController.address,
                 0,
@@ -371,14 +369,22 @@ contract('PropertyController', function(accounts) {
                 1
             );
     
-            await propertyController.removeProperty(property.address, {from: owner});
-            await assertExpectations(mock);
+            await propertyController.removeProperty(property.address);
+            await assertExpectations();
         });
-        
-        it('should NOT allow to remove property from non-authorized caller', async () => {
-            await propertyController.removeProperty(property.address, {from: unauthorized});
-            await assertExpectations(mock);
+
+        it("should check auth when removing property", async () => {
+            let property = '0xffffffffffffffffffffffffffffffffffffffff';
+
+            await ignoreAuth(false);
+
+            await expectAuth(propertyController, unauthorized, "removeProperty");
+
+            await propertyController.removeProperty(property, {from: unauthorized});
+
+            await assertExpectations();
         });
+
     });
 
     describe("Reserve Deed", () => {
@@ -402,7 +408,8 @@ contract('PropertyController', function(accounts) {
             ));
         });
 
-        it.skip('should return `true` when reserve deed from owner', async () => {
+        it('should allow to reserve deed', async () => {
+            const property = Mock.address;
             const price = 1000;
             const intermediaries = [accounts[4], accounts[5]];
             const payments = [price];
@@ -414,18 +421,11 @@ contract('PropertyController', function(accounts) {
                 baseDeedInterface.metaDeed.getData(),
                 bytes32(Mock.address)
             );
-    
+            
             await mock.expect(
                 PropertyController.address,
                 0,
-                baseDeedInterface.property.getData(),
-                bytes32(Mock.address)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyRegistryInterface.relevant.getData(Mock.address),
+                propertyRegistryInterface.relevant.getData(property),
                 1
             );
             
@@ -433,9 +433,9 @@ contract('PropertyController', function(accounts) {
                 PropertyController.address,
                 0,
                 propertyInterface.status.getData(),
-                1
+                0
             );
-    
+            
             await mock.expect(
                 PropertyController.address,
                 0,
@@ -457,7 +457,23 @@ contract('PropertyController', function(accounts) {
                 ),
                 1
             );
-
+    
+            await mock.expect(
+                PropertyController.address,
+                0,
+                propertyProxyInterface.setPropertyToPendingState.getData(
+                    property, Mock.address
+                ),
+                1
+            );
+    
+            await mock.expect(
+                PropertyController.address,
+                0,
+                deedRegistryInterface.register.getData(Mock.address),
+                1
+            );
+            
             let result = await propertyController.reserveDeed.call(
                 Mock.address,
                 Mock.address,
@@ -471,65 +487,8 @@ contract('PropertyController', function(accounts) {
             );
             
             assert.isTrue(result);
-        });
-
-        it('should return `false` when reserve deed from non-authorized caller', async () => {
-            const price = 1000;
-            const intermediaries = [accounts[4], accounts[5]];
-            const payments = [price];
-            const seller = accounts[1];
     
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.metaDeed.getData(),
-                bytes32(Mock.address)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.property.getData(),
-                bytes32(Mock.address)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyRegistryInterface.relevant.getData(Mock.address),
-                1
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyInterface.status.getData(),
-                1
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyInterface.getTitleOwner.getData(),
-                bytes32(seller)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.reserve.getData(
-                    Mock.address,
-                    price,
-                    seller,
-                    accounts[2],
-                    accounts[3],
-                    intermediaries,
-                    payments
-                ),
-                1
-            );
-    
-            let result = await propertyController.reserveDeed.call(
+            let result2 = await propertyController.reserveDeed(
                 Mock.address,
                 Mock.address,
                 price,
@@ -538,118 +497,10 @@ contract('PropertyController', function(accounts) {
                 accounts[3],
                 intermediaries,
                 payments,
-                {from: unauthorized}
-            );
-            
-            assert.isFalse(result);
-        });
-        
-        it.skip('should allow to reserve deed from owner', async () => {
-            const property = '0xffffffffffffffffffffffffffffffffffffffff';
-            const price = 1000;
-            const intermediaries = [accounts[4], accounts[5]];
-            const payments = [price];
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.reserve.getData(
-                    property,
-                    price,
-                    accounts[1],
-                    accounts[2],
-                    accounts[3],
-                    intermediaries,
-                    payments
-                ),
-                1
-            );
-    
-            await propertyController.reserveDeed(
-                Mock.address,
-                property,
-                price,
-                accounts[1],
-                accounts[2],
-                accounts[3],
-                intermediaries,
-                payments,
                 {from: owner}
             );
     
-            await assertExpectations(mock);
-        });
-        
-        it('should NOT allow reserve deed from non-authorized caller', async () => {
-            const property = '0xffffffffffffffffffffffffffffffffffffffff';
-            const price = 1000;
-            const intermediaries = [accounts[4], accounts[5]];
-            const payments = [price];
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.reserve.getData(
-                    property,
-                    price,
-                    accounts[1],
-                    accounts[2],
-                    accounts[3],
-                    intermediaries,
-                    payments
-                ),
-                1
-            );
-    
-           await propertyController.reserveDeed(
-               Mock.address,
-               property,
-               price,
-               accounts[1],
-               accounts[2],
-               accounts[3],
-               intermediaries,
-               payments,
-               {from: unauthorized}
-           );
-           
-           await assertExpectations(mock, 1, 0);
-        });
-        
-        it('should emit DeedReserved when reserve deed from owner', async () => {
-            const property = '0xffffffffffffffffffffffffffffffffffffffff';
-            const price = 1000;
-            const intermediaries = [accounts[4], accounts[5]];
-            const payments = [price];
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.reserve.getData(
-                    property,
-                    price,
-                    accounts[1],
-                    accounts[2],
-                    accounts[3],
-                    intermediaries,
-                    payments
-                ),
-                1
-            );
-    
-            let result = await propertyController.reserveDeed(
-                Mock.address,
-                property,
-                price,
-                accounts[1],
-                accounts[2],
-                accounts[3],
-                intermediaries,
-                payments,
-                {from: owner}
-            );
-    
-            assertLogs(result.logs, [{
+            assertLogs(result2.logs, [{
                 address: MultiEventsHistory.address,
                 event: 'DeedReserved',
                 args: {
@@ -661,223 +512,51 @@ contract('PropertyController', function(accounts) {
                     escrow: accounts[3]
                 }
             }]);
+    
+            await assertExpectations();
         });
-        
-        it('should NOT emit event when reserve deed from non-authorized caller', async () => {
-            const property = '0xffffffffffffffffffffffffffffffffffffffff';
+
+        it("should check auth when reserving deed", async () => {
+            const property = Mock.address;
             const price = 1000;
             const intermediaries = [accounts[4], accounts[5]];
             const payments = [price];
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.reserve.getData(
-                    property,
-                    price,
-                    accounts[1],
-                    accounts[2],
-                    accounts[3],
-                    intermediaries,
-                    payments
-                ),
-                1
-            );
-    
+            const seller = accounts[1];
+
+            await ignoreAuth(false);
+
+            await expectAuth(propertyController, unauthorized, "reserveDeed");
+
             let result = await propertyController.reserveDeed(
                 Mock.address,
                 property,
                 price,
-                accounts[1],
+                seller,
                 accounts[2],
                 accounts[3],
                 intermediaries,
                 payments,
                 {from: unauthorized}
             );
-    
+
             assert.equal(result.logs.length, 0);
+
+            await assertExpectations();
         });
     });
-
-    describe("Approve Deed", () => {
-        
-        it.skip('should allow to approve deed from seller', async () => {
-            const seller = accounts[1];
-            const buyer = accounts[2];
-            const escrow = accounts[3];
-            
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.property.getData(),
-                bytes32(Mock.address)
-            );
-            
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyRegistryInterface.relevant.getData(Mock.address),
-                1
-            );
     
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyInterface.status.getData(),
-                0
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.metaDeed.getData(),
-                bytes32(Mock.address)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyInterface.getTitleOwner.getData(),
-                bytes32(seller)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.seller.getData(),
-                bytes32(seller)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.buyer.getData(),
-                bytes32(buyer)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.escrow.getData(),
-                bytes32(escrow)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.approve.getData(),
-                1
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                deedRegistryInterface.register.getData(Mock.address),
-                1
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyProxyInterface.setPropertyToPendingState.getData(Mock.address, Mock.address),
-                1
-            );
-    
-            //should Not allow to approve Null deed
-            assert.isFalse(await propertyController.approveDeed.call(0, {from: seller}));
-            
-            //should return `true` when approve deed from seller
-            assert.isTrue(await propertyController.approveDeed.call(Mock.address, {from: seller}));
-            
-            //should emit DeedApproved when approve deed from seller
-            let result = await propertyController.approveDeed(Mock.address, {from: seller});
-    
-            assertLogs(result.logs, [{
-                address: MultiEventsHistory.address,
-                event: 'DeedApproved',
-                args: {
-                    self: propertyController.address,
-                    deed: Mock.address
-                }
-            }]);
-
-            await assertExpectations(mock);
-        });
-
-        it.skip('should NOT allow approve deed from non-seller', async () => {
-            const seller = accounts[1];
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.property.getData(),
-                bytes32(Mock.address)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyRegistryInterface.relevant.getData(Mock.address),
-                1
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyInterface.status.getData(),
-                0
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.metaDeed.getData(),
-                bytes32(Mock.address)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                propertyInterface.getTitleOwner.getData(),
-                bytes32(unauthorized)
-            );
-    
-            await mock.expect(
-                PropertyController.address,
-                0,
-                baseDeedInterface.seller.getData(),
-                bytes32(seller)
-            );
-    
-            //should return `false` when approve deed from non-seller
-            assert.isFalse(await propertyController.approveDeed.call(Mock.address, {from: unauthorized}));
-            
-            //should NOT emit event when approve deed from non-seller
-            let result = await propertyController.approveDeed(Mock.address, {from: unauthorized});
-            assert.equal(result.logs.length, 0);
-    
-            await assertExpectations(mock);
-        });
-    });
-
     describe("Register Deed", () => {
 
         it('should not allow to register Null deed', async () => {
-            assert.isFalse(await propertyController.registerDeed.call(0, {from: owner}));
+            assert.isFalse(await propertyController.registerDeed.call(0));
         });
 
-        it('should return `true` when register deed from owner', async () => {
+        it('should return `true` when register deed', async () => {
             let deed = '0xffffffffffffffffffffffffffffffffffffffff';
-            assert.isTrue(await propertyController.registerDeed.call(deed, {from: owner}));
+            assert.isTrue(await propertyController.registerDeed.call(deed));
         });
 
-        it('should return `false` when register deed from non-authorized caller', async () => {
-            let deed = '0xffffff0fffffffffffffffffffffffffffffffff';
-            assert.isFalse(await propertyController.registerDeed.call(deed, {from: unauthorized}));
-        });
-
-        it('should allow to register deed from owner', async () => {
+        it('should allow to register deed', async () => {
             await mock.expect(
                 PropertyController.address,
                 0,
@@ -885,29 +564,32 @@ contract('PropertyController', function(accounts) {
                 1
             );
             
-            await propertyController.registerDeed(Mock.address, {from: owner});
-            await assertExpectations(mock);
+            await propertyController.registerDeed(Mock.address);
+            await assertExpectations();
         });
-        
-        it('should NOT allow register deed from non-authorized caller', async () => {
-            await propertyController.registerDeed(Mock.address, {from: unauthorized});
-            await assertExpectations(mock);
+
+        it("should check auth when registering deed", async () => {
+            let deed = '0xffffff0fffffffffffffffffffffffffffffffff';
+
+            await ignoreAuth(false);
+
+            await expectAuth(propertyController, unauthorized, "registerDeed");
+
+            await propertyController.registerDeed(deed, {from: unauthorized});
+
+            await assertExpectations();
         });
+
     });
 
     describe("Remove Deed", () => {
 
-        it('should return `true` when remove deed from owner', async () => {
+        it('should return `true` when remove deed', async () => {
             let deed = '0xffffffffffffffffffffffffffffffffffffffff';
-            assert.isTrue(await propertyController.removeDeed.call(deed, {from: owner}));
+            assert.isTrue(await propertyController.removeDeed.call(deed));
         });
 
-        it('should return `false` when remove deed from non-authorized caller', async () => {
-            let deed = '0xffffffffffffffffffffffffffffffffffffffff';
-            assert.isFalse(await propertyController.removeDeed.call(deed, {from: unauthorized}));
-        });
-
-        it('should allow to remove deed from owner', async () => {
+        it('should allow to remove deed', async () => {
             await mock.expect(
                 PropertyController.address,
                 0,
@@ -915,13 +597,20 @@ contract('PropertyController', function(accounts) {
                 1
             );
     
-            await propertyController.removeDeed(Mock.address, {from: owner});
-            await assertExpectations(mock);
+            await propertyController.removeDeed(Mock.address);
+            await assertExpectations();
         });
-        
-        it('should NOT allow remove deed from non-authorized caller', async () => {
-            await propertyController.removeDeed(Mock.address, {from: unauthorized});
-            await assertExpectations(mock);
+
+        it("should check auth when removing deed", async () => {
+            let deed = '0xffffffffffffffffffffffffffffffffffffffff';
+
+            await ignoreAuth(false);
+
+            await expectAuth(propertyController, unauthorized, "removeDeed");
+
+            await propertyController.removeDeed(deed, {from: unauthorized});
+
+            await assertExpectations();
         });
     });
 
@@ -929,17 +618,17 @@ contract('PropertyController', function(accounts) {
 
         it('should not allow to change Null deed', async () => {
             assert.isFalse(await propertyController.changeDeedIntermediary.call(
-                0, 1, accounts[4], {from: owner}
+                0, 1, accounts[4]
             ));
         });
         
         it('should not allow to change deed with a Null newActor', async () => {
             assert.isFalse(await propertyController.changeDeedIntermediary.call(
-                Mock.address, 1, 0, {from: owner}
+                Mock.address, 1, 0
             ));
         });
         
-        it('should allow to change deed from owner', async () => {
+        it('should allow to change deed', async () => {
             await mock.expect(
                 PropertyController.address,
                 0,
@@ -947,20 +636,22 @@ contract('PropertyController', function(accounts) {
                 bytes32(Mock.address)
             );
             
-            assert.isTrue(await propertyController.changeDeedIntermediary.call(Mock.address, 1, accounts[4], {from: owner}));
+            assert.isTrue(await propertyController.changeDeedIntermediary.call(Mock.address, 1, accounts[4]));
             
-            await propertyController.changeDeedIntermediary(Mock.address, 1, accounts[4], {from: owner});
-            await assertExpectations(mock);
+            await propertyController.changeDeedIntermediary(Mock.address, 1, accounts[4]);
+            await assertExpectations();
         });
-        
-        it('should NOT allow change deed from non-authorized caller', async () => {
-            assert.isFalse(await propertyController.changeDeedIntermediary.call(
+
+        it("should check auth when removing deed", async () => {
+            await ignoreAuth(false);
+
+            await expectAuth(propertyController, unauthorized, "changeDeedIntermediary");
+
+            await propertyController.changeDeedIntermediary(
                 Mock.address, 1, accounts[4], {from: unauthorized}
-            ));
-    
-            await propertyController.changeDeedIntermediary(Mock.address, 1, accounts[4], {from: unauthorized});
-            await assertExpectations(mock);
-    
+            );
+
+            await assertExpectations();
         });
     });
 });

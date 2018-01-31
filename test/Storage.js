@@ -3,16 +3,15 @@
 const ManagerMock = artifacts.require('./ManagerMock.sol');
 const Storage = artifacts.require('./Storage.sol');
 
-const Asserts = require('./helpers/asserts');
 const Reverter = require('./helpers/reverter');
 
-const { BIGGEST_UINT, ZERO_ADDRESS, ZERO_BYTES32, equal } = require('./helpers/helpers');
+const { equal, reverts } = require("./helpers/assert");
+const { BIGGEST_UINT, ZERO_ADDRESS, ZERO_BYTES32 } = require('./helpers/constants');
 
 contract('Storage', function(accounts) {
     const reverter = new Reverter(web3);
     afterEach('revert', reverter.revert);
 
-    const asserts = Asserts(assert);
     let storage;
     let manager;
     const KEY = '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
@@ -66,7 +65,7 @@ contract('Storage', function(accounts) {
     it('should NOT store uint values if not allowed', async () => {
         const value = web3.toBigNumber(BIGGEST_UINT);
         await manager.deny();
-        await asserts.throws(storage.setUInt(CRATE, KEY, value));
+        await reverts(storage.setUInt(CRATE, KEY, value));
         const result = await storage.getUInt(CRATE, KEY);
         equal(result, 0);
     });
@@ -74,7 +73,7 @@ contract('Storage', function(accounts) {
     it('should NOT store address values if not allowed', async () => {
         const value = '0xffffffffffffffffffffffffffffffffffffffff';
         await manager.deny();
-        await asserts.throws(storage.setAddress(CRATE, KEY, value));
+        await reverts(storage.setAddress(CRATE, KEY, value));
         const result = await storage.getAddress(CRATE, KEY);
         equal(result, ZERO_ADDRESS);
     });
@@ -82,7 +81,7 @@ contract('Storage', function(accounts) {
     it('should NOT store bool values if not allowed', async () => {
         const value = true;
         await manager.deny();
-        await asserts.throws(storage.setBool(CRATE, KEY, value));
+        await reverts(storage.setBool(CRATE, KEY, value));
         const result = await storage.getBool(CRATE, KEY);
         equal(result, false)
     });
@@ -90,7 +89,7 @@ contract('Storage', function(accounts) {
     it('should NOT store int values if not allowed', async () => {
         const value = web3.toBigNumber(2).pow(255).sub(1).mul(-1);
         await manager.deny();
-        await asserts.throws(storage.setInt(CRATE, KEY, value));
+        await reverts(storage.setInt(CRATE, KEY, value));
         const result = await storage.getInt(CRATE, KEY);
         equal(result, 0);
     });
@@ -98,7 +97,7 @@ contract('Storage', function(accounts) {
     it('should NOT store bytes32 values if not allowed', async () => {
         const value = BIGGEST_UINT;
         await manager.deny();
-        await asserts.throws(storage.setBytes32(CRATE, KEY, value));
+        await reverts(storage.setBytes32(CRATE, KEY, value));
         const result = await storage.getBytes32(CRATE, KEY);
         equal(result, ZERO_BYTES32);
     });

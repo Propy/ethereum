@@ -5,17 +5,16 @@ const Mock = artifacts.require('./Mock.sol');
 const Storage = artifacts.require('./Storage.sol');
 const StorageTester = artifacts.require('./StorageTester.sol');
 
-const Asserts = require('./helpers/asserts');
 const Reverter = require('./helpers/reverter');
 
-const { BIGGEST_UINT, equal } = require('./helpers/helpers');
+const { equal, reverts } = require("./helpers/assert");
+const { BIGGEST_UINT } = require('./helpers/constants');
 
 
 contract('StorageInterface', function(accounts) {
     const reverter = new Reverter(web3);
     afterEach('revert', reverter.revert);
 
-    const asserts = Asserts(assert);
     let storage;
     let storageTester;
     let mock;
@@ -197,6 +196,6 @@ contract('StorageInterface', function(accounts) {
     });
 
     it('should not allow repeated variables initialization', () => {
-        return asserts.throws(storageTester.reinit());
+        return reverts(storageTester.reinit());
     });
 });

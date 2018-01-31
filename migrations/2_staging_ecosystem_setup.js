@@ -3,10 +3,11 @@
 const Promise = require("bluebird");
 
 const { bytes32, ZERO_ADDRESS } = require('../test/helpers/helpers');
-const { contracts, roles } = require('../test/helpers/meta').rinkeby;
+const { contracts } = require('../test/helpers/meta').networks.rinkeby;
+const { roles } = require('../test/helpers/meta');
 
 const DeedRegistry = artifacts.require('./DeedRegistry.sol');
-const FakeCoin = artifacts.require('./FakeCoin.sol');
+const TokenMock = artifacts.require('./TokenMock.sol');
 const FeeCalc = artifacts.require('./FeeCalc.sol');
 const Mock = artifacts.require('./Mock.sol');
 const PropertyController = artifacts.require("./PropertyController.sol");
@@ -23,7 +24,7 @@ const DeployTest = artifacts.require('./DeployTest.sol');
 
 const allContracts = [
     DeedRegistry,
-    FakeCoin,
+    TokenMock,
     FeeCalc,
     PropertyController,
     PropertyFactory,
@@ -42,7 +43,7 @@ const allContracts = [
  * @param network  string : Network name, e.g. "live" or "development"
  * @param accounts  array : Array with accounts addresses
  *
- * async/await don't work here as for truffle@3.4.11 т-т
+ * async/await don't work here as for truffle@4.0.4 т-т
  */
 module.exports = async (deployer, network, accounts) => {
     //if (network === "rinkeby") {

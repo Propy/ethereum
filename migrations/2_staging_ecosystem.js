@@ -3,11 +3,11 @@
 const Promise = require("bluebird");
 
 const { bytes32, ZERO_ADDRESS } = require('../test/helpers/helpers');
-const { contracts } = require('../test/helpers/meta').networks.rinkeby;
+const { contracts, multiSigOwners, parties } = require('../test/helpers/meta').networks.rinkeby;
 const { roles } = require('../test/helpers/meta');
 
 const DeedRegistry = artifacts.require('./DeedRegistry.sol');
-const FakeCoin = artifacts.require('./FakeCoin.sol');
+const TokenMock = artifacts.require('./TokenMock.sol');
 const FeeCalc = artifacts.require('./FeeCalc.sol');
 const Mock = artifacts.require('./Mock.sol');
 const PropertyController = artifacts.require("./PropertyController.sol");
@@ -19,10 +19,12 @@ const StorageInterface = artifacts.require('./StorageInterface.sol');
 const StorageManager = artifacts.require('./StorageManager.sol');
 const UsersRegistry = artifacts.require('./UsersRegistry.sol');
 const MultiEventsHistory = artifacts.require('./MultiEventsHistory.sol');
+const RolesLibrary = artifacts.require('./RolesLibrary.sol');
+const MultiSigWallet = artifacts.require('./MultiSigWallet.sol');
 
 const allContracts = [
     DeedRegistry,
-    FakeCoin,
+    TokenMock,
     FeeCalc,
     PropertyController,
     PropertyFactory,
@@ -33,6 +35,8 @@ const allContracts = [
     StorageManager,
     UsersRegistry,
     MultiEventsHistory,
+    RolesLibrary,
+    MultiSigWallet,
 ];
 
 /**
@@ -41,102 +45,153 @@ const allContracts = [
  * @param network  string : Network name, e.g. "live" or "development"
  * @param accounts  array : Array with accounts addresses
  *
- * async/await don't work here as for truffle@3.4.11 т-т
+ * async/await don't work here as for truffle@4.0.4 т-т
  */
 module.exports = async (deployer, network, accounts) => {
     if (network === "rinkeby") {
         const OWNER = accounts[0];
+
+        let storageManager;
+        let storage;
+        let multiEventsHistory;
+        let rolesLibrary;
+
+        let token;
+        let feeCalc;
+
+        let propertyController;
+        let propertyProxy;
+        let propertyFactory;
+        let propertyRegistry;
+        let deedRegistry;
+        let usersRegistry;
 
         // STORAGE
         deployer.deploy(Storage)
             .then(() => deployer.deploy(StorageInterface))
             .then(() => deployer.deploy(StorageManager))
             .then(() => StorageManager.deployed())
+            .then(instance => {
+                storageManager = instance;
+            })
             .then(() => Storage.deployed())
-            .then(storage => storage.setManager(StorageManager.address))
+            .then(instance => {
+                storage = instance;
+                storage.setManager(StorageManager.address);
+            })
+
+            // ROLES LIBRARY
+            .then(() => deployer.deploy(RolesLibrary, Storage.address, "RolesLibrary"))
+            .then(() => RolesLibrary.deployed())
+            .then(instance => {
+                rolesLibrary = instance;
+            })
+            .then(() => storageManager.giveAccess(RolesLibrary.address, "RolesLibrary"))
+            .then(() => rolesLibrary.setRootUser(accounts[0], true))
+
 
             // MULTI EVENTS HISTORY
-            .then(() => deployer.deploy(MultiEventsHistory))
+            .then(() => deployer.deploy(MultiEventsHistory, RolesLibrary.address))
+            .then(() => MultiEventsHistory.deployed())
+            .then(instance => {
+                multiEventsHistory = instance;
+            })
+            .then(() => multiEventsHistory.authorize(RolesLibrary.address))
+            .then(() => rolesLibrary.setupEventsHistory(MultiEventsHistory.address))
+
 
             // FAKE TOKEN
-            .then(() => deployer.deploy(FakeCoin))
-            .then(() => FakeCoin.deployed())
+            .then(() => deployer.deploy(TokenMock))
+            .then(() => TokenMock.deployed())
+            .then(instance => {
+                token = instance;
+            })
 
             // FEE CALC
             .then(() => deployer.deploy(FeeCalc, 100))
             .then(() => FeeCalc.deployed())
+            .then(instance => {
+                feeCalc = instance;
+            })
 
             // PROPERTY CONTROLLER
             .then(() => deployer.deploy(
-                PropertyController, ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS,
-                ZERO_ADDRESS, ZERO_ADDRESS, FakeCoin.address, FeeCalc.address
+                PropertyController, RolesLibrary.address, ZERO_ADDRESS, ZERO_ADDRESS, ZERO_ADDRESS,
+                ZERO_ADDRESS, ZERO_ADDRESS, TokenMock.address, FeeCalc.address
             ))
             .then(() => PropertyController.deployed())
+            .then(instance => {
+                propertyController = instance;
+            })
 
             // PROPERTY PROXY
-            .then(() => deployer.deploy(PropertyProxy))
+            .then(() => deployer.deploy(PropertyProxy, PropertyController.address, RolesLibrary.address))
             .then(() => PropertyProxy.deployed())
+            .then(instance => {
+                propertyProxy = instance;
+            })
 
             // PROPERTY FACTORY
-            .then(() => deployer.deploy(PropertyFactory, PropertyController.address, PropertyProxy.address))
+            .then(() => deployer.deploy(PropertyFactory, PropertyController.address, PropertyProxy.address, RolesLibrary.address))
             .then(() => PropertyFactory.deployed())
+            .then(instance => {
+                propertyFactory = instance;
+            })
 
             // PROPERTY REGISTRY
             .then(() => deployer.deploy(
-                PropertyRegistry, Storage.address, "PropertyRegistry", PropertyController.address
+                PropertyRegistry, Storage.address, "PropertyRegistry", PropertyController.address, RolesLibrary.address
             ))
             .then(() => PropertyRegistry.deployed())
+            .then(instance => {
+                propertyRegistry = instance;
+            })
 
             // DEED REGISTRY
             .then(() => deployer.deploy(
-                DeedRegistry, Storage.address, "DeedRegistry", PropertyController.address
+                DeedRegistry, Storage.address, "DeedRegistry", PropertyController.address, RolesLibrary.address
             ))
             .then(() => DeedRegistry.deployed())
+            .then(instance => {
+                deedRegistry = instance;
+            })
 
             // USERS REGISTRY
             .then(() => deployer.deploy(
-                UsersRegistry, Storage.address, "UsersRegistry", PropertyController.address
+                UsersRegistry, Storage.address, "UsersRegistry", PropertyController.address, RolesLibrary.address
             ))
             .then(() => UsersRegistry.deployed())
+            .then(instance => {
+                usersRegistry = instance;
+            })
 
             // AUTHORIZE CONTRACTS AT MULTI EVENTS HISTORY
-            .then(() => MultiEventsHistory.deployed())
-            .then(history => {
+            .then(() => {
                 return Promise.all([
-                    history.authorize(StorageManager.address),
-                    history.authorize(PropertyController.address),
-                    history.authorize(PropertyProxy.address),
-                    history.authorize(PropertyFactory.address),
-                    history.authorize(PropertyRegistry.address),
-                    history.authorize(DeedRegistry.address),
-                    history.authorize(UsersRegistry.address),
+                    multiEventsHistory.authorize(PropertyController.address),
+                    multiEventsHistory.authorize(PropertyProxy.address),
+                    multiEventsHistory.authorize(PropertyFactory.address),
+                    multiEventsHistory.authorize(PropertyRegistry.address),
+                    multiEventsHistory.authorize(DeedRegistry.address),
+                    multiEventsHistory.authorize(UsersRegistry.address),
                 ])
             })
 
             // SETUP MULTI EVENTS HISTORY
-            .then(() => StorageManager.deployed())
-            .then(instance => instance.setupEventsHistory(MultiEventsHistory.address))
-            .then(() => PropertyController.deployed())
-            .then(instance => instance.setupEventsHistory(MultiEventsHistory.address))
-            .then(() => PropertyProxy.deployed())
-            .then(instance => instance.setupEventsHistory(MultiEventsHistory.address))
-            .then(() => PropertyFactory.deployed())
-            .then(instance => instance.setupEventsHistory(MultiEventsHistory.address))
-            .then(() => PropertyRegistry.deployed())
-            .then(instance => instance.setupEventsHistory(MultiEventsHistory.address))
-            .then(() => DeedRegistry.deployed())
-            .then(instance => instance.setupEventsHistory(MultiEventsHistory.address))
-            .then(() => UsersRegistry.deployed())
-            .then(instance => instance.setupEventsHistory(MultiEventsHistory.address))
+            .then(() => propertyController.setupEventsHistory(MultiEventsHistory.address))
+            .then(() => propertyProxy.setupEventsHistory(MultiEventsHistory.address))
+            .then(() => propertyFactory.setupEventsHistory(MultiEventsHistory.address))
+            .then(() => propertyRegistry.setupEventsHistory(MultiEventsHistory.address))
+            .then(() => deedRegistry.setupEventsHistory(MultiEventsHistory.address))
+            .then(() => usersRegistry.setupEventsHistory(MultiEventsHistory.address))
 
 
             // GIVE ACCESS TO STORAGE
-            .then(() => StorageManager.deployed())
-            .then(manager => {
+            .then(() => {
                 return Promise.all([
-                    manager.giveAccess(PropertyRegistry.address, "PropertyRegistry"),
-                    manager.giveAccess(DeedRegistry.address, "DeedRegistry"),
-                    manager.giveAccess(UsersRegistry.address, "UsersRegistry"),
+                    storageManager.giveAccess(PropertyRegistry.address, "PropertyRegistry"),
+                    storageManager.giveAccess(DeedRegistry.address, "DeedRegistry"),
+                    storageManager.giveAccess(UsersRegistry.address, "UsersRegistry"),
                 ]);
             })
             .then(results => {
@@ -149,21 +204,19 @@ module.exports = async (deployer, network, accounts) => {
 
 
             // SETUP PROPERTY CONTROLLER
-            .then(() => PropertyController.deployed())
-            .then(controller => {
+            .then(() => {
                 return Promise.all([
-                    controller.setPropertyProxy(PropertyProxy.address),
-                    controller.setPropertyFactory(PropertyFactory.address),
-                    controller.setPropertyRegistry(PropertyRegistry.address),
-                    controller.setDeedRegistry(DeedRegistry.address),
-                    controller.setUsersRegistry(UsersRegistry.address),
-                    controller.setFeeWallets(OWNER, OWNER)
+                    propertyController.setPropertyProxy(PropertyProxy.address),
+                    propertyController.setPropertyFactory(PropertyFactory.address),
+                    propertyController.setPropertyRegistry(PropertyRegistry.address),
+                    propertyController.setDeedRegistry(DeedRegistry.address),
+                    propertyController.setUsersRegistry(UsersRegistry.address),
+                    propertyController.setFeeWallets(OWNER, OWNER)
                 ]);
             })
 
             // Create user roles
-            .then(() => UsersRegistry.deployed())
-            .then(usersRegistry => {
+            .then(() => {
                 let promises = [];
                 for (let role in roles) {
                     promises.push(usersRegistry.defineRole(roles[role]));
@@ -177,6 +230,21 @@ module.exports = async (deployer, network, accounts) => {
                     }
                 }
             })
+
+            // Register users
+            .then(() => Promise.each(Object.keys(parties), party => {
+                let { firstname, lastname, role, address } = parties[party];
+                console.log(parties[party]);
+                return usersRegistry.create(
+                    address, firstname, lastname, role, roles[role], address
+                );
+            }))
+            .then(console.log)
+
+            // Deploy MultiSigWallet and force change of contract ownership to it
+            .then(() => deployer.deploy(MultiSigWallet, multiSigOwners, 2))
+            .then(() => storage.forceChangeContractOwnership(MultiSigWallet.address))
+            .then(() => storageManager.forceChangeContractOwnership(MultiSigWallet.address))
 
             .then(() => {
                 console.log('Accounts:');

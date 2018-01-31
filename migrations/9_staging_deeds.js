@@ -1,6 +1,6 @@
 "use strict";
 const DeedRegistry = artifacts.require('./DeedRegistry.sol');
-const FakeCoin = artifacts.require('./FakeCoin.sol');
+const TokenMock = artifacts.require('./TokenMock.sol');
 const FeeCalc = artifacts.require('./FeeCalc.sol');
 const ManagerMock = artifacts.require('./ManagerMock.sol');
 const Mock = artifacts.require('./Mock.sol');
@@ -26,7 +26,7 @@ const EscrowEther = artifacts.require('./EscrowEther.sol');
 
 const Promise = require("bluebird");
 const { bytes32, getSig, ZERO_ADDRESS } = require('../test/helpers/helpers');
-const { contracts } = require("../test/helpers/meta").rinkeby;
+const { contracts } = require("../test/helpers/meta").networks.rinkeby;
 
 const deployed = [
     BaseDeed,
@@ -41,7 +41,7 @@ const deployed = [
  * @param network  string : Network name, e.g. "live" or "development"
  * @param accounts  array : Array with accounts addresses
  *
- * async/await don't work here as for truffle@3.4.11 т-т
+ * async/await don't work here as for truffle@4.0.4 т-т
  */
 module.exports = async (deployer, network, accounts) => {
     //if (network === "rinkeby") {

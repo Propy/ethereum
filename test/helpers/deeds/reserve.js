@@ -2,7 +2,8 @@
 
 const BN = require('bignumber.js');
 
-const { ZERO_ADDRESS, assertLogs, assertState, bytes32, parseLogs } = require("../helpers");
+const { assertLogs, assertState, equal, throws } = require("../assert");
+const { bytes32, parseLogs } = require("../helpers");
 
 const Asserts = require('../asserts');
 const Reverter = require('../reverter');
@@ -15,19 +16,19 @@ const BaseDeedInterface = web3.eth.contract(BaseDeed.abi).at('0x0');
 
 module.exports = function (base) {
 
-    async function reserveDeed(base, data, returns, expectedState, throws, logs) {
+    async function reserveDeed(base, data, returns, expectedState, isError, logs) {
         await assertState(base.baseDeed, base.initialState);
         const result = await base.mock.forwardCall.call(base.baseDeed.address, data);
-        assert.equal(result, bytes32(returns));
+        equal(result, bytes32(returns));
 
-        if (!throws) {
+        if (!isError) {
             const tx = await base.mock.forwardCall(base.baseDeed.address, data);
             const txLogs = parseLogs(base.topics, tx.receipt.logs);
             //console.log(txLogs);
             assertLogs(txLogs, logs);
         } else {
             console.log("KINDA AWKWARD")
-            await asserts.error(base.mock.forwardCall, [base.baseDeed.address, data]);
+            await throws(base.mock.forwardCall, [base.baseDeed.address, data]);
         }
         await assertState(base.baseDeed, expectedState);
     }

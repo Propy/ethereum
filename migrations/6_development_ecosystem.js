@@ -1,17 +1,20 @@
 "use strict";
 
+const { equal } = require('../test/helpers/assert');
 const { bytes32, ZERO_ADDRESS } = require('../test/helpers/helpers');
 
 const Mock = artifacts.require('./Mock.sol');
 const ManagerMock = artifacts.require('./ManagerMock.sol');
 
-const FakeCoin = artifacts.require('./FakeCoin.sol');
+const TokenMock = artifacts.require('./TokenMock.sol');
 
 const Storage = artifacts.require("./Storage.sol");
 const StorageInterface = artifacts.require('./StorageInterface.sol');
 const StorageManager = artifacts.require('./StorageManager.sol');
 const StorageTester = artifacts.require('./StorageTester.sol');
 const MultiEventsHistory = artifacts.require('./MultiEventsHistory.sol');
+const RolesLibrary = artifacts.require('./RolesLibrary.sol');
+const MultiSigWallet = artifacts.require('./MultiSigWallet.sol');
 
 const PropertyController = artifacts.require("./PropertyController.sol");
 const UsersRegistry = artifacts.require('./UsersRegistry.sol');
@@ -26,12 +29,13 @@ const BaseDeedFactory = artifacts.require('./BaseDeedFactory.sol');
 const EscrowFactory = artifacts.require('./EscrowFactory.sol');
 
 const Property = artifacts.require("./Property.sol");
+const SimpleDeed = artifacts.require("./SimpleDeed.sol");
 
 const contracts = [
     Mock,
     ManagerMock,
 
-    FakeCoin,
+    TokenMock,
     Storage,
     StorageInterface,
     StorageManager,
@@ -49,8 +53,10 @@ const contracts = [
     MetaDeedFactory,
     BaseDeedFactory,
     EscrowFactory,
+    RolesLibrary,
 
     Property,
+    SimpleDeed
 ];
 
 /**
@@ -59,7 +65,7 @@ const contracts = [
  * @param network  string : Network name, e.g. "live" or "development"
  * @param accounts  array : Array with accounts addresses
  *
- * async/await don't work here as for truffle@3.4.11 т-т
+ * async/await don't work here as for truffle@4.0.4 т-т
  */
 module.exports = async (deployer, network, accounts) => {
     if (network === "development" || network === "main") {
@@ -68,7 +74,7 @@ module.exports = async (deployer, network, accounts) => {
         const pseudo_controller = accounts[1];
 
         deployer.deploy(Mock)
-            .then(() => deployer.deploy(FakeCoin))
+            .then(() => deployer.deploy(TokenMock))
 
             // Utilities
             .then(() => deployer.deploy(ManagerMock))
@@ -80,27 +86,32 @@ module.exports = async (deployer, network, accounts) => {
             .then(() => deployer.deploy(StorageTester, Storage.address, 'StorageTester'))
 
             .then(() => deployer.deploy(StorageManager, Mock.address))
-            .then(() => deployer.deploy(MultiEventsHistory))
+            .then(() => deployer.deploy(MultiEventsHistory, Mock.address))
+            .then(() => deployer.deploy(RolesLibrary, Storage.address, 'RolesLibrary'))
 
             .then(() => deployer.deploy(FeeCalc, 100))
 
 
             // Ecosystem
             .then(() => deployer.deploy(
-                PropertyController, Mock.address, Mock.address, Mock.address,
-                Mock.address, Mock.address, FakeCoin.address, Mock.address
+                PropertyController, Mock.address, Mock.address, Mock.address, Mock.address,
+                Mock.address, Mock.address, TokenMock.address, Mock.address
             ))
-            .then(() => deployer.deploy(PropertyProxy, pseudo_controller))
-            .then(() => deployer.deploy(PropertyFactory, pseudo_controller, Mock.address))
+            .then(() => deployer.deploy(
+                PropertyProxy, pseudo_controller, Mock.address
+            ))
+            .then(() => deployer.deploy(
+                PropertyFactory, pseudo_controller, Mock.address, Mock.address
+            ))
 
             .then(() => deployer.deploy(
-                PropertyRegistry, Storage.address, "PropertyRegistry", pseudo_controller
+                PropertyRegistry, Storage.address, "PropertyRegistry", pseudo_controller, Mock.address
             ))
             .then(() => deployer.deploy(
-                DeedRegistry, Storage.address, "DeedRegistry", pseudo_controller
+                DeedRegistry, Storage.address, "DeedRegistry", pseudo_controller, Mock.address
             ))
             .then(() => deployer.deploy(
-                UsersRegistry, Storage.address, "UsersRegistry", pseudo_controller
+                UsersRegistry, Storage.address, "UsersRegistry", pseudo_controller, Mock.address
             ))
 
             // Factories
@@ -110,6 +121,24 @@ module.exports = async (deployer, network, accounts) => {
 
             .then(() => deployer.deploy(
                 Property, ZERO_ADDRESS, owner, "", "", 1, 1
+            ))
+
+            .then(() => deployer.deploy(
+                SimpleDeed, Property.address, 1000, accounts[0], accounts[1], ["Key"], ["Value"]
+            ))
+            .then(() => SimpleDeed.deployed())
+            .then(async simpleDeed => {
+                console.log(simpleDeed)
+                equal(await simpleDeed.property(), Property.address);
+                equal(await simpleDeed.price(), 1000);
+                equal(await simpleDeed.seller(), accounts[0]);
+                equal(await simpleDeed.buyer(), accounts[1]);
+                equal(await simpleDeed.data(1, "Key"), bytes32("Value", true));
+            })
+
+            // MultiSigWallet
+            .then(() => deployer.deploy(
+                MultiSigWallet, accounts.slice(0, 3), 2
             ))
 
             .then(() => {

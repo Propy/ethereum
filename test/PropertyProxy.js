@@ -5,20 +5,21 @@ const PropertyController = artifacts.require("./PropertyController.sol");
 const MultiEventsHistory = artifacts.require('./MultiEventsHistory.sol');
 const Mock = artifacts.require('./Mock.sol');
 
-const Asserts = require('./helpers/asserts');
 const Reverter = require('./helpers/reverter');
 
-const { ZERO_ADDRESS, assertExpectations, assertLogs, equal, bytes32 } = require('./helpers/helpers');
+const { assertLogs, equal } = require('./helpers/assert');
+const { AssertExpectations, IgnoreAuth, ExpectAuth } = require('./helpers/mock');
 
 contract('PropertyProxy', function (accounts) {
     const reverter = new Reverter(web3);
     afterEach('revert', reverter.revert);
-    
-    const asserts = Asserts(assert);
 
     const owner = accounts[0];
-    const unauthorized = accounts[2];
-    const controller = accounts[5];
+    const controller = accounts[1];
+    
+    let assertExpectations;
+    let ignoreAuth;
+    let expectAuth;
     
     let propertyProxy;
     let mock;
@@ -28,11 +29,17 @@ contract('PropertyProxy', function (accounts) {
         mock = await Mock.deployed();
         propertyProxy = await PropertyProxy.deployed();
         multiEventsHistory = await MultiEventsHistory.deployed();
+    
+        assertExpectations = AssertExpectations(mock);
+        ignoreAuth = IgnoreAuth(mock);
+        expectAuth = ExpectAuth(mock);
+    
+        await ignoreAuth(true);
 
         await propertyProxy.setupEventsHistory(MultiEventsHistory.address);
         await multiEventsHistory.authorize(propertyProxy.address);
-
         await propertyProxy.setController(controller, {from: owner});
+        
         await reverter.snapshot();
     });
     
@@ -55,26 +62,23 @@ contract('PropertyProxy', function (accounts) {
             assert.isTrue(await propertyProxy.setController.call(controller, {from: owner}));
         });
     
-        it('should return `false` when setting controller from non-authorized', async () => {
-            let controller = '0xffffff0fffffffffffffffffffffffffffffffff';
-            assert.isFalse(await propertyProxy.setController.call(controller, {from: unauthorized}));
-        });
-    
-        it('should allow to set controller from owner', async () => {
-            const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
-            await propertyProxy.setController(newController, {from: owner});
+        it("should check auth when setting controller", async () => {
+            const caller = accounts[9];
+            const newController = accounts[8];
+        
+            await ignoreAuth(false);
+            await expectAuth(propertyProxy, caller, "setController");
+        
+            await propertyProxy.setController(newController, {from: caller});
+        
             const currentController = await propertyProxy.controller.call();
-            assert.equal(currentController, newController);
+        
+            equal(currentController, controller);
+        
+            await assertExpectations();
         });
     
-        it('should NOT allow to set controller from not owner', async () => {
-            const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
-            await propertyProxy.setController(newController, {from: unauthorized});
-            const currentController = await propertyProxy.controller.call();
-            assert.equal(currentController, controller);
-        });
-    
-        it('should emit ServiceChanged after setting controller from owner', async () => {
+        it('should emit ServiceChanged after setting controller', async () => {
             const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
             let result = await propertyProxy.setController(newController, {from: owner});
             assertLogs(result.logs, [{
@@ -83,16 +87,10 @@ contract('PropertyProxy', function (accounts) {
                 args: {
                     self: propertyProxy.address,
                     name: 'Controller',
-                    oldAddress: accounts[5],
+                    oldAddress: controller,
                     newAddress: newController
                 }
             }]);
-        });
-    
-        it('should NOT emit ServiceChanged after setting controller from non-authorized', async () => {
-            const newController = '0xffffff0fffffffffffffffffffffffffffffffff';
-            let result = await propertyProxy.setController(newController, {from: unauthorized});
-            assert.equal(result.logs.length, 0);
         });
     });
     
@@ -101,7 +99,22 @@ contract('PropertyProxy', function (accounts) {
     });
     
     describe("Force property change contract ownership", () => {
+        
+        it("should check auth when change contract ownership", async () => {
+            const caller = accounts[9];
+            const property = '0xffffffffffffffffffffffffffffffffffffffff';
+            const to = '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
     
+            await ignoreAuth(false);
+            await expectAuth(propertyProxy, caller, "forcePropertyChangeContractOwnership");
+    
+            assert.isFalse(await propertyProxy.forcePropertyChangeContractOwnership.call(
+                property, to, {from: caller}
+            ));
+    
+            await propertyProxy.forcePropertyChangeContractOwnership(property, to, {from: caller});
+            await assertExpectations();
+        });
     });
     
     describe("Migrate property", () => {

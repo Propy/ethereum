@@ -2,30 +2,23 @@
 
 
 const StorageManager = artifacts.require('./StorageManager.sol');
-const MultiEventsHistory = artifacts.require('./MultiEventsHistory.sol');
 const Mock = artifacts.require('./Mock.sol');
 
-const Asserts = require('./helpers/asserts');
 const Reverter = require('./helpers/reverter');
 
-const { ZERO_ADDRESS, assertExpectations, assertLogs, equal, bytes32 } = require('./helpers/helpers');
+const { assertLogs } = require('./helpers/assert');
 
 contract('StorageManager', function (accounts) {
     const reverter = new Reverter(web3);
     afterEach('revert', reverter.revert);
-    
-    const asserts = Asserts(assert);
+
     let storageManager;
-    let multiEventsHistory;
     
     const owner = accounts[0];
     const unauthorized = accounts[2];
 
     before('setup', async () => {
         storageManager = await StorageManager.deployed();
-        multiEventsHistory = await MultiEventsHistory.deployed();
-        await storageManager.setupEventsHistory(MultiEventsHistory.address);
-        await multiEventsHistory.authorize(storageManager.address);
         await reverter.snapshot();
     });
     
@@ -86,13 +79,13 @@ contract('StorageManager', function (accounts) {
             assert.isFalse(result_2);
         });
     
-        it('should emit AccessGiven event in MultiEventsHistory after access is given', async () => {
+        it('should emit AccessGiven event after access is given', async () => {
             const address = '0xffffffffffffffffffffffffffffffffffffffff';
             const role = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
             const result = await storageManager.giveAccess(address, role, {from: owner});
     
             assertLogs(result.logs, [{
-                address: MultiEventsHistory.address,
+                address: StorageManager.address,
                 event: 'AccessGiven',
                 args: {
                     actor: address,
@@ -101,7 +94,7 @@ contract('StorageManager', function (accounts) {
             }]);
         });
 
-        it('should NOT emit AccessGiven event in MultiEventsHistory after giving access failed', async () => {
+        it('should NOT emit AccessGiven event after giving access failed', async () => {
             const address = '0xffffffffffffffffffffffffffffffffffffffff';
             const role = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
             const result = await storageManager.giveAccess(address, role, {from: unauthorized});
@@ -164,13 +157,13 @@ contract('StorageManager', function (accounts) {
             assert.isFalse(await storageManager.isAllowed(address, role));
         });
 
-        it('should emit AccessBlocked event in MultiEventsHistory after access is blocked', async () => {
+        it('should emit AccessBlocked event after access is blocked', async () => {
             const address = '0xffffffffffffffffffffffffffffffffffffffff';
             const role = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
             const result = await storageManager.blockAccess(address, role, {from: owner});
 
             assertLogs(result.logs, [{
-                address: MultiEventsHistory.address,
+                address: StorageManager.address,
                 event: 'AccessBlocked',
                 args: {
                     actor: address,
@@ -179,7 +172,7 @@ contract('StorageManager', function (accounts) {
             }]);
         });
         
-        it('should NOT emit AccessBlocked event in MultiEventsHistory after access block is failed', async () => {
+        it('should NOT emit AccessBlocked event after access block is failed', async () => {
             const address = '0xffffffffffffffffffffffffffffffffffffffff';
             const role = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
             const result = await storageManager.blockAccess(address, role, {from: unauthorized});
