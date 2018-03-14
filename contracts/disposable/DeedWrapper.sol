@@ -14,21 +14,13 @@ contract DeedInterface {
 
 contract DeedWrapper is Owned {
 
-    DeedInterface public oldDeed = DeedInterface(0x7cDce8f97AFf2F38a9C6A6c9f139998f7A79fA43);
+    address public property;
+    uint256 public price;
+    address public seller;
+    address public buyer;
 
     // PROPERTY //
-    function property() public constant returns(address) {
-        return oldDeed.propertyId();
-    }
-    function price() public constant returns(uint256) {
-        return oldDeed.price();
-    }
-    function seller() public constant returns(address) {
-        return oldDeed.selledId();
-    }
-    function buyer() public constant returns(address) {
-        return oldDeed.buyerId();
-    }
+
     function escrow() public constant returns(address) {
         return address(0);
     }
@@ -38,18 +30,21 @@ contract DeedWrapper is Owned {
     function moves(uint8) public constant returns(uint8) {
         return 1;
     }
-    function intermediaries(uint256 _index) public constant returns(address) {
-        return [
-            oldDeed.brokerId(),                 // System
-            oldDeed.agentId()                   // Notary
-        ][_index];
+    function intermediaries(uint256) public constant returns(address) {
+        return address(0);
     }
     function metaDeed() public constant returns(address) {
-        return 0xd4BC1c1e570DbC529FDd6c1285cD6Df2c0620E5d;
+        return address(0);
     }
 
-    function DeedWrapper(address _oldDeed) {
-        oldDeed = DeedInterface(_oldDeed);
+    function DeedWrapper(address _property, address _seller, address _buyer) public {
+        property = _property;
+        seller = _seller;
+        buyer = _buyer;
+    }
+
+    function setPrice(uint256 _price) public onlyContractOwner {
+        price = _price;
     }
 
 }

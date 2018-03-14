@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity ^0.4.18;
 
 import "../base/Owned.sol";
 import "../base/AddressChecker.sol";
@@ -27,7 +27,7 @@ contract UsersRegistryInterface {
 
 contract TokenInterface {
     function balanceOf(address) public constant returns(uint256);
-    function transferFrom(address, address, uint256) public returns(bool);
+    function transfer(address, uint256) public returns(bool);
 }
 
 contract FeeCalcInterface {
@@ -466,19 +466,19 @@ contract BaseDeed is Owned, AddressChecker {
         address companyWallet = controller.companyWallet();
         assert(companyWallet != address(0));
         uint256 companyFee = FeeContract.getCompanyFee(price);
-        assert(token.transferFrom(address(this), companyWallet, companyFee));
+        assert(token.transfer(companyWallet, companyFee));
         // Charge network growth fee
         address networkGrowthPoolWallet = controller.networkGrowthPoolWallet();
         assert(networkGrowthPoolWallet != address(0));
         uint256 networkGrowthFee = FeeContract.getNetworkGrowthFee(price);
-        assert(token.transferFrom(address(this), networkGrowthPoolWallet, networkGrowthFee));
+        assert(token.transfer(networkGrowthPoolWallet, networkGrowthFee));
 
         FeePaid(_move, buyer, companyFee + networkGrowthFee);
 
         // Return change back to buyer
         uint256 excessFee = token.balanceOf(address(this));
         if (excessFee > 0) {
-            assert(token.transferFrom(address(this), buyer, excessFee));
+            assert(token.transfer(buyer, excessFee));
         }
     }
 
