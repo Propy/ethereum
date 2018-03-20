@@ -23,7 +23,7 @@ contract EscrowOracle is EscrowBase {
         depositAmount = depositAmount + _payment;
         Deposit(_payment, depositAmount);
         if (depositAmount > deed.price()) {
-            _checkPayment(msg.sender, _payment);
+            _checkPayment(msg.sender, depositAmount);
         }
     }
 
