@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity ^0.4.18;
 
 
 import "../base/AddressChecker.sol";
@@ -13,6 +13,7 @@ contract MetaDeedInterface {
 contract DeedInterface {
     function action(uint8, bytes32[], bytes32[], uint8) public returns(bool);
     function moves(uint8) public constant returns(uint8);
+    function price() public constant returns(uint256);
 }
 
 contract EscrowBase is Owned, AddressChecker {
@@ -146,7 +147,7 @@ contract EscrowBase is Owned, AddressChecker {
 
         uint8 move = paymentMoves[currentMoveIndex];
         uint256 payment = payments[move];
-        require(_value == payment);
+        require(_value >= payment);
         PaymentReceived(move, _sender, _value);
 
         uint8 MOVE_STATUS_SUCCESS = 1;
