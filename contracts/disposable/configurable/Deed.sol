@@ -98,6 +98,7 @@ contract Deed is Owned, AddressChecker {
     event StatusUpdate(DeedStatus status);
     event FeePaid(uint256 step, address payer, uint256 value);
     event StepDone(bytes32 title, uint256 step);
+    event DocumentSaved(bytes32 documentHash, uint256 step);
     event DeductionAdded(uint256 value);
     event OwnershipTransfer(uint256 step, bool success);
 
@@ -125,31 +126,6 @@ contract Deed is Owned, AddressChecker {
         _;
     }
 
-    modifier checkSignsToRequiredRole(bytes32 documentHash, uint8[] v, bytes32[] r, bytes32[] s) {
-        uint256 roles = uint256(0);
-        for (uint256 _s = 0; _s < v.length; ++_s) {
-            address _user = decodeAddress(documentHash, v[_s], r[_s], s[_s]);
-            if (!_validateUserRole(_user)) {
-                emit RoleError("User's role are invalid.", _user);
-                return;
-            }
-            roles |= _usersRegistry().getUserRole(_user);
-        }
-        if (roles != steps[currentStepIndex].requiredRoles) {
-            emit Error("Sign set doesn't match to required roles.");
-            return;
-        }
-        _;
-    }
-
-    modifier validLengthSigns(uint8[] v, bytes32[] r, bytes32[] s) {
-        if(v.length != r.length || r.length != s.length) {
-            emit Error("Sign data must have identical size.");
-            return;
-        }
-        _;
-    }
-
     modifier notNull(address _user) {
         if (_user == address(0)) {
             emit Error("Address shouldn't have zero value");
@@ -170,13 +146,18 @@ contract Deed is Owned, AddressChecker {
         return ecrecover(hash, v, r, s);
     }
 
-    /// TODO: Create configuration init
-    function init()
+    /**
+     *
+     */
+    function init(uint16[] moves, uint256[] roles, bytes flags)
      public
      onlyStatus(DeedStatus.NONE)
      onlyContractOwner
     {
-
+        require(moves.length == roles.length && roles.length == flags.length);
+        for(uint256 i = 0; i < moves.length; ++i) {
+            steps.push(StepInfo({ moveId: moves[i], requiredRoles: roles[i], flag: flags[i] }));
+        }
         _setStatus(DeedStatus.PREPARED);
     }
 
@@ -214,13 +195,20 @@ contract Deed is Owned, AddressChecker {
     function action(bytes32 documentHash, uint8[] v, bytes32[] r, bytes32[] s)
      external
      onlyStatus(DeedStatus.RESERVED)
-     validLengthSigns(v, r, s)
-     checkSignsToRequiredRole(documentHash, v, r, s)
     {
-
-        if(_isFinalStep()) {
-            _approveOwnershipTransfer();
+        if (!_checkSignsToRequiredRole(documentHash, v, r, s)) {
+            return;
         }
+        Sign[] memory signs = new Sign[](v.length);
+        for(uint8 i = 0; i < v.length; ++i) {
+            signs[i] = (Sign({ v: v[i], r: r[i], s: s[i] }));
+        }
+        if(_isFinalStep()) {
+            if (!_approveOwnershipTransfer()) {
+                return;
+            }
+        }
+        doneSteps.push(StepData({ data: documentHash, step: steps[currentStepIndex], userSigns: signs }));
         _nextStep();
     }
 
@@ -233,18 +221,22 @@ contract Deed is Owned, AddressChecker {
     }
 
     function _approveOwnershipTransfer() internal returns(bool) {
-        _payFee();
-        PropertyInterface _property = PropertyInterface(property);
-        assert(_property.approveOwnershipTransfer(buyer));
-        emit OwnershipTransfer(currentStepIndex, true);
-        _setStatus(DeedStatus.FINISHED);
+        if (_payFee()) {
+            PropertyInterface _property = PropertyInterface(property);
+            assert(_property.approveOwnershipTransfer(buyer));
+            emit OwnershipTransfer(currentStepIndex, true);
+            _setStatus(DeedStatus.FINISHED);
+            return true;
+        }
+        return false;
     }
 
-    function _rejectOwnershipTransfer() internal {
+    function _rejectOwnershipTransfer() internal returns(bool) {
         PropertyInterface Property = PropertyInterface(property);
         assert(Property.rejectOwnershipTransfer());
         emit OwnershipTransfer(currentStepIndex, false);
         _setStatus(DeedStatus.REJECTED);
+        return true;
     }
 
     /**
@@ -261,7 +253,7 @@ contract Deed is Owned, AddressChecker {
         uint256 companyFee = FeeContract.getCompanyFee(price);
         uint256 networkGrowthFee = FeeContract.getNetworkGrowthFee(price);
         if (companyWallet == address(0) || networkGrowthPoolWallet == address(0)) {
-            emit Error("Some wallet is null.");
+            emit Error("Some fee wallet is null.");
             return false;
         }
         if (token.allowance(buyer, address(this)) < (companyFee + networkGrowthFee) || 
@@ -310,6 +302,27 @@ contract Deed is Owned, AddressChecker {
 
     function _currentStepTitle() internal view returns(bytes32) {
         return "";
+    }
+
+    function _checkSignsToRequiredRole(bytes32 documentHash, uint8[] v, bytes32[] r, bytes32[] s) internal returns(bool) {
+        if(v.length != r.length || r.length != s.length) {
+            emit Error("Sign data must have identical size.");
+            return false;
+        }
+        uint256 roles = uint256(0);
+        for (uint256 _s = 0; _s < v.length; ++_s) {
+            address _user = decodeAddress(documentHash, v[_s], r[_s], s[_s]);
+            if (!_validateUserRole(_user)) {
+                emit RoleError("User's role are invalid.", _user);
+                return false;
+            }
+            roles |= _usersRegistry().getUserRole(_user);
+        }
+        if (roles != steps[currentStepIndex].requiredRoles) {
+            emit Error("Sign set doesn't match to required roles.");
+            return false;
+        }
+        return true;
     }
 
     function _validateUserRole(address user) internal view returns(bool) {
