@@ -38,6 +38,7 @@ contract FeeCalcInterface {
 
 contract EscrowInterface {
     function init(uint256, uint256[]) public returns(bool);
+    function reInit(uint256, uint256[]) public returns(bool);
     function assignPayment(uint8, uint8, address, address) public returns(bool);
 }
 
@@ -125,6 +126,8 @@ contract BaseDeed is Owned, AddressChecker {
     event PartyDeprived(uint party, address who);
     event ServiceChanged(string name, address oldAddress, address newAddress);
 
+    event PropertyPriceChanged(uint256 oldPrice, uint256 newPrice);
+
     event DataProvided(uint8 move, uint party, address who, bytes32 key, bytes32 value);
     event MoveDone(uint8 move, uint8 status);  // Another parameters?
     event FeePaid(uint8 move, address payer, uint256 value);
@@ -133,7 +136,7 @@ contract BaseDeed is Owned, AddressChecker {
 
     event Error(string msg);
     event DebugAddress(address addr);
-    event DebugBool(bool boolean);
+    event DebugBool(bool value);
     event DebugUint8(uint8 number);
     event DebugUint(uint number);
 
@@ -361,6 +364,29 @@ contract BaseDeed is Owned, AddressChecker {
 
         moves[_move] = _status;
         MoveDone(_move, uint8(_status));
+        return true;
+    }
+
+    function setPrice(uint256 _price, uint256[] _payments)
+     public
+     onlyStatus(Status.RESERVED)
+     onlyContractOwner
+     returns(bool)
+    {
+        if (
+            _price == 0 ||
+            _payments.length == 0
+        ) {
+            Error("Some of arguments are invalid.");
+            return false;
+        }
+        if (!EscrowInterface(escrow).reInit(_price, _payments)) {
+            // In this case error is being emitted in the escrow contract.
+            return false;
+        }
+        uint256 oldPrice = price;
+        price = _price;
+        PropertyPriceChanged(oldPrice, price);
         return true;
     }
 
