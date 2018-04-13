@@ -103,7 +103,7 @@ contract EscrowBase is Owned, AddressChecker {
             assert(payments[move] == 0);
 
             payments[move] = _payments[i];
-            paymentMoves[i] = move;
+            paymentMoves.push(move);
         }
 
         currentMoveIndex = 0;  // Explicit assignment, just in case.
@@ -142,7 +142,7 @@ contract EscrowBase is Owned, AddressChecker {
             require(move > 0);
 
             payments[move] = _payments[i];
-            paymentMoves.push(move);
+            paymentMoves[i] = move;
         }
 
         currentMoveIndex = 0;  // Explicit assignment, just in case.
