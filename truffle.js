@@ -1,47 +1,51 @@
 "use strict";
 
+const Remotes = {
+    Rinkeby: "http://rinkeby.propy.biz:8545",
+    Mainnet: {
+        Geth: "http://eth.propy.biz:8545",
+        Parity: "http://parity.propy.biz:8545"
+    }
+}
+
 const Web3 = require("web3");
-const ProviderEngine = require("web3-provider-engine");
-const WalletSubprovider = require('web3-provider-engine/subproviders/wallet.js');
-const Web3Subprovider = require("web3-provider-engine/subproviders/web3.js");
-const FilterSubprovider = require('web3-provider-engine/subproviders/filters.js');
+const Provider = require('truffle-privatekey-provider');
 
 const ethereumjsWallet = require('ethereumjs-wallet');
 
-// Create wallet from existing private key
-const privateKey = require('./network_keys/private/rinkeby');
-const wallet = ethereumjsWallet.fromPrivateKey(new Buffer(privateKey, "hex"));
-const sender = "0x" + wallet.getAddress().toString("hex");
+const PrivateKey = require('./network_keys/private/keys');
 
-// Using rinkeby testnet
 const apiKey = require('./network_keys/api/infura');
 const providerUrl = "https://rinkeby.infura.io/" + apiKey;
-const engine = new ProviderEngine();
 
-const provider = new Web3.providers.HttpProvider(providerUrl);
+let provider = new Provider(PrivateKey.Rinkeby[0], "http://localhost:8545");
 const web3 = new Web3(provider);
-
-// filters
-engine.addProvider(new FilterSubprovider());
-engine.addProvider(new WalletSubprovider(wallet, {}));
-engine.addProvider(new Web3Subprovider(provider));
-engine.start();  // FIXME: Truffle hangs after compilation/migration because of this
-
 
 module.exports = {
     networks: {
-        development: {
-            host: "localhost",
+        test: {
+            host: "127.0.0.1",
             port: 8545,
-            network_id: "*", // Match any network id
-            gas: 4000000,
+            network_id: 5777, // Match Ganache(Truffle) network id
+            gas: 5000000,
         },
         rinkeby: {
             network_id: 4,
-            provider: () => engine,
-            from: sender,
+            provider: () => new Provider(PrivateKey.Rinkeby[0], Remotes.Rinkeby),
             gas: 4712388,
             gasPrice: web3.toWei(20, 'gwei')
+        },
+        mainnet_parity: {
+            network_id: 1,
+            provider: () => new Provider(PrivateKey.Mainnet[0], Remotes.Mainnet.Parity),
+            gas: 5000000,
+            gasPrice: web3.toWei(4, 'gwei')
+        },
+        mainnet_geth: {
+            network_id: 1,
+            provider: () => new Provider(PrivateKey.Mainnet[0], Remotes.Mainnet.Geth),
+            gas: 5000000,
+            gasPrice: web3.toWei(4, 'gwei')
         }
     },
     solc: {

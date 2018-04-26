@@ -1,9 +1,9 @@
-pragma solidity ^0.4.18;
+pragma solidity 0.4.23;
 
 import "../../base/Owned.sol";
 import "../../base/AddressChecker.sol";
 
-contract Property is Owned, AddressChecker {
+contract NewProperty is Owned, AddressChecker {
     enum Status {
         OWNED,
         PENDING,
@@ -38,11 +38,20 @@ contract Property is Owned, AddressChecker {
         }
     }
 
+    modifier onlyTitleOwner() {
+        for(uint256 i = 0; i < owners.length; ++i) {
+            if(owners[i] == msg.sender) {
+                _;
+                break;
+            }
+        }
+    }
+
     event OwnerChanged(address property, address[] owners);
     event StatusChanged(address property, uint8 to);
     event Migrated(address to);
 
-    function Property(
+    constructor (
         address _previousVersion,
         address[] _titleOwner,
         string _name,
@@ -63,6 +72,11 @@ contract Property is Owned, AddressChecker {
         status = Status.OWNED;
     }
 
+    function setUrl(string _url) public onlyTitleOwner returns(bool) {
+        url = _url;
+        return true;
+    }
+
     function setPropertyToPendingState(address _deed)
      public
      onlyContractOwner
@@ -71,7 +85,7 @@ contract Property is Owned, AddressChecker {
     {
         status = Status.PENDING;
         currentDeed = _deed;
-        StatusChanged(address(this), uint8(status));
+        emit StatusChanged(address(this), uint8(status));
         return true;
     }
 
@@ -81,11 +95,15 @@ contract Property is Owned, AddressChecker {
      only(currentDeed)
      returns(bool)
     {
-        owners = _newOwners;
+        for (uint256 i = 0; i < _newOwners.length; ++i) {
+            part[_newOwners[i]][0] = _parts[0][i];
+            part[_newOwners[i]][1] = _parts[1][i];
+            owners.push(_newOwners[i]);
+        }
         status = Status.OWNED;
         currentDeed = address(0);
-        OwnerChanged(address(this), _newOwners);
-        StatusChanged(address(this), uint8(status));
+        emit OwnerChanged(address(this), _newOwners);
+        emit StatusChanged(address(this), uint8(status));
         return true;
     }
 
@@ -97,6 +115,17 @@ contract Property is Owned, AddressChecker {
     {
         status = Status.OWNED;
         currentDeed = address(0);
-        StatusChanged(address(this), uint8(status));
+        emit StatusChanged(address(this), uint8(status));
+    }
+
+    function migrate(address _to) public onlyContractOwner returns(bool) {
+        NewProperty newProperty = NewProperty(_to);
+        if (newProperty.previousVersion() != address(this)) {
+            return false;
+        }
+        newVersion = _to;
+        status = Status.MIGRATED;
+        emit Migrated(_to);
+        return true;
     }
 }

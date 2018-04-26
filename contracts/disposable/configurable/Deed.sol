@@ -5,11 +5,6 @@ import "../../base/AddressChecker.sol";
 
 pragma experimental "v0.5.0"; // Include 0.5.0 features !
 
-contract MetaDataInterface {
-    function controller() public constant returns(address);
-    function getMoveInfo() public constant returns(bytes32);
-}
-
 contract ControllerInterface {
     function feeCalc() public constant returns(address);
     function token() public constant returns(address);
@@ -20,9 +15,7 @@ contract ControllerInterface {
 }
 
 contract UsersRegistryInterface {
-    function hasRole(address, uint) public constant returns(bool);
     function getUserRole(address) public constant returns(uint);
-    function getWallet(address) public constant returns(address);
 }
 
 contract TokenInterface {
@@ -37,19 +30,18 @@ contract FeeCalcInterface {
 }
 
 contract EscrowInterface {
-    function init(uint256) public returns(bool);
-    function checkPayment(uint256) public view returns(bool);
-    function payment() public constant returns(uint256);
+    function checkPayment() public view returns(bool);
 }
 
 contract PropertyInterface {
-    function approveOwnershipTransfer(address[]) public returns(bool);
+    function approveOwnershipTransfer(address[], uint8[2][]) public returns(bool);
     function rejectOwnershipTransfer() public returns(bool);
 }
 
 contract Deed is Owned, AddressChecker {
 
     uint256 private constant USERS_MAX = 64;
+    uint8 private constant USERS_BIT_MASK = 0xF; // 0000 1111
 
     // 0000 0000
     // High 4 bit is status bits
@@ -77,10 +69,9 @@ contract Deed is Owned, AddressChecker {
     }
 
     struct StepInfo {
-        uint256 nextStep;
-
-        uint16 stepType;
+        bytes4 stepType;
         uint8 requiredDocsCount;
+        uint8 minimumSignsCount;
         uint256 roles;
         uint8 flag;
     }
@@ -88,10 +79,11 @@ contract Deed is Owned, AddressChecker {
     DeedStatus public status;
 
     mapping(uint256 => StepInfo) public steps;
+    mapping(uint256 => uint256) public flow;
     mapping(uint256 => uint8) public loadedDocuments;
-    mapping(bytes32 => Sign[]) private signs;
+    mapping(bytes32 => mapping(address => Sign)) private signs;
 
-    uint256 private lastStep;
+    uint256 private firstStep;
     uint256 private indexStep;
     uint256 private currentStep;
 
@@ -110,8 +102,8 @@ contract Deed is Owned, AddressChecker {
     event RoleError(string message, address user);
     event StatusUpdate(DeedStatus status);
     event FeePaid(address payer, uint256 value);
-    event StepCreated(uint16 stepType, uint256 roles, uint8 flag);
-    event StepDone(uint16 stepType, uint256 step);
+    event StepCreated(bytes4 stepType, uint256 roles, uint8 flag);
+    event StepDone(bytes4 stepType, uint256 step);
     event UserSet(address user, uint256 role, uint8 flag);
     event DocumentSaved(bytes32 documentHash, uint256 step);
     event OwnershipTransfer(bool success);
@@ -128,14 +120,6 @@ contract Deed is Owned, AddressChecker {
     modifier onlyNotStatus(DeedStatus _status) {
         if (_status == status) {
             emit Error("Any other contract status required.");
-            return;
-        }
-        _;
-    }
-
-    modifier checkRoleExist(address _user) {
-        if (_usersRegistry().getUserRole(_user) == uint256(0)) {
-            emit RoleError("User does not registered in the UsersRegistry.", _user);
             return;
         }
         _;
@@ -158,7 +142,7 @@ contract Deed is Owned, AddressChecker {
     }
 
     modifier onlyFinal() {
-        if (!_isFinalStep()) {
+        if (!_isFinalStep() || !_checkBit(steps[currentStep].flag, DONE_STEP)) {
             emit Error("Not all steps are done!");
             return;
         }
@@ -175,85 +159,85 @@ contract Deed is Owned, AddressChecker {
         return ecrecover(hash, v, r, s);
     }
 
+    function decodeAll(bytes32 documentHash, uint8[] v, bytes32[] r, bytes32[] s)
+     public
+     pure
+     returns(address[])
+    {
+        require(v.length == r.length && r.length == s.length && v.length > 0 && v.length <= USERS_MAX, "Sign size not correct.");
+        address[] memory _users = new address[](v.length);
+        for (uint256 i = 0; i < v.length; ++i) {
+            _users[i] = decodeAddress(documentHash, v[i], r[i], s[i]);
+        }
+        return _users;
+    }
+
     function getStepFlow() public view returns(uint256[]) {
-        uint256[] memory flow = new uint256[](indexStep);
+        uint256[] memory _flow = new uint256[](indexStep);
         uint256 index = 0;
         for(uint256 i = 0; i < indexStep; ++i) {
-            flow[i] = index;
-            index = steps[index].nextStep;
+            _flow[i] = index;
+            index = flow[index];
         }
-        return flow;
+        return _flow;
     }
 
     function isSignedBy(bytes32 _dataHash, address _user) public view returns(bool) {
-        Sign[] storage _signs = signs[_dataHash];
-        for(uint256 i = 0; i < _signs.length; ++i) {
-            address _signer = decodeAddress(_dataHash, _signs[i].v, _signs[i].r, _signs[i].s);
-            if (_signer == _user) {
-                return true;
-            }
-        }
-        return false;
+        return signs[_dataHash][_user].v == 27 || signs[_dataHash][_user].v == 28;
     }
 
-    constructor(address _owner, address _controller) public {
+    constructor (address _controller) public {
+        controller = ControllerInterface(_controller);
+    }
+
+    function unsafe_construct(address _owner, address _controller) public {
+        require(contractOwner == address(0));
         contractOwner = _owner;
         controller = ControllerInterface(_controller);
     }
 
     /**
-     *
-     */
-    function init(uint16[] moves, uint256[] roles, uint8[] documents, bytes flags)
+     * Counts it is packed 'minimumSignsCount' and 'requiredDocsCount'
+     *       0000 0000           0000 0000         -> ( 1.(0000 0000) 2.(0000 0000) )
+     *  1.minimumSignsCount  2.requiredDocsCount
+     */ 
+    function init(bytes4[] moves, uint256[] roles, uint16[] counts, bytes flags)
      public
      onlyStatus(DeedStatus.NONE)
      onlyContractOwner
     {
         require(moves.length == roles.length && roles.length == flags.length);
-        uint256 index = indexStep;
-        uint256 last = lastStep;
+        currentStep = 1;
         for(uint256 i = 0; i < moves.length; ++i) {
-            if(index != 0) {
-                steps[last].nextStep = index;
-            }
-            steps[index] = StepInfo({
+            uint8 _docs = uint8(counts[i]);
+            uint8 _signs = uint8((counts[i] >> 8));
+            _insertStep(StepInfo({
                 stepType: moves[i],
                 roles: roles[i],
-                requiredDocsCount: documents[i],
-                flag: uint8(flags[i]),
-
-                nextStep: 0
-            });
-            last = index;
-            index++;
-            emit StepCreated(moves[i], roles[i], uint8(flags[i]));
+                requiredDocsCount: _docs,
+                minimumSignsCount: _signs,
+                flag: uint8(flags[i])
+            }), 0);
         }
-        lastStep = last;
-        indexStep = index;
         _setStatus(DeedStatus.PREPARED);
     }
 
-    function addStep(uint16 stepType, uint256 role, uint8 documents, bytes1 flag)
+    function insertStep(bytes4 stepType, uint256 role, uint16 counts, bytes1 flag, uint256 stepId)
      public
      onlyNotStatus(DeedStatus.FEEPAID)
      onlyNotStatus(DeedStatus.FINISHED)
      onlyNotStatus(DeedStatus.REJECTED)
      onlyContractOwner
     {
-        if(indexStep != 0) {
-            steps[lastStep].nextStep = indexStep;
-        }
-        steps[indexStep] = StepInfo({
+        uint8 _docs = uint8(counts);
+        uint8 _signs = uint8((counts >> 8));
+        _insertStep(StepInfo({
             stepType: stepType,
             roles: role,
-            requiredDocsCount: documents,
-            flag: uint8(flag),
-
-            nextStep: 0
-        });
-        lastStep = indexStep;
-        indexStep++;
-        emit StepCreated(stepType, role, uint8(flag));
+            requiredDocsCount: _docs,
+            minimumSignsCount: _signs,
+            flag: uint8(flag)
+        }), stepId);
     }
 
     function reserve(
@@ -268,10 +252,6 @@ contract Deed is Owned, AddressChecker {
      notNull(_escrow)
      returns(bool)
     {
-        if (!EscrowInterface(_escrow).init(_price)) {
-            // In this case error is being emitted in the escrow contract.
-            return false;
-        }
         property = _property;
         price = _price;
         escrow = EscrowInterface(_escrow);
@@ -338,16 +318,25 @@ contract Deed is Owned, AddressChecker {
      external
      onlyStatus(DeedStatus.STARTED)
     {
-        if (!_checkSignsToRequiredRole(documentHash, v, r, s) ||
-         !_checkSignsToRequiredFlag(documentHash, v, r, s)) {
+        require(!_checkBit(steps[currentStep].flag, DONE_STEP), "Step is already done!");
+        address[] memory _users = decodeAll(documentHash, v, r, s);
+        if (!_checkSignsToRequiredRole(_users) ||
+         !_checkSignsToRequiredFlag((steps[currentStep].flag & USERS_BIT_MASK), _users)) {
+            return;
+        }
+        if(v.length < steps[currentStep].minimumSignsCount) {
+            emit Error("Signs count less that required");
             return;
         }
         for(uint8 i = 0; i < v.length; ++i) {
-            signs[documentHash].push(Sign({ v: v[i], r: r[i], s: s[i] }));
+            address _user = decodeAddress(documentHash, v[i], r[i], s[i]);
+            require(!isSignedBy(documentHash, _user), "Document is already signed!");
+            signs[documentHash][_user] = (Sign({ v: v[i], r: r[i], s: s[i] }));
             loadedDocuments[currentStep]++;
         }
         if (loadedDocuments[currentStep] >= steps[currentStep].requiredDocsCount) {
             steps[currentStep].flag |= DONE_STEP;
+            emit StepDone(steps[currentStep].stepType, currentStep);
         }
         emit DocumentSaved(documentHash, currentStep);
         _nextStep();
@@ -355,23 +344,24 @@ contract Deed is Owned, AddressChecker {
 
     function payFee()
      public
+     onlyContractOwner
      onlyStatus(DeedStatus.STARTED)
      onlyFinal()
     {
-        require(escrow.checkPayment(currentPrice()), "Payment does not done!");
+        require(escrow.checkPayment(), "Payment does not done!");
         FeeCalcInterface FeeContract = _feeCalc();
         TokenInterface token = _token();
 
         address companyWallet = controller.companyWallet();
         address networkGrowthPoolWallet = controller.networkGrowthPoolWallet();
-        uint256 companyFee = FeeContract.getCompanyFee(currentPrice());
-        uint256 networkGrowthFee = FeeContract.getNetworkGrowthFee(currentPrice());
+        uint256 companyFee = FeeContract.getCompanyFee(price);
+        uint256 networkGrowthFee = FeeContract.getNetworkGrowthFee(price);
         if (companyWallet == address(0) || networkGrowthPoolWallet == address(0)) {
             emit Error("Some fee wallet is null.");
             return;
         }
         if (token.balanceOf(address(this)) < (companyFee + networkGrowthFee)) {
-            emit Error("Deed balance are too low!");
+            emit Error("Deed balance is too low!");
             return;
         }
         assert(token.transfer(companyWallet, companyFee));
@@ -394,16 +384,22 @@ contract Deed is Owned, AddressChecker {
      external
      onlyStatus(DeedStatus.FEEPAID)
     {
-        if (!_checkSignsToRequiredRole(documentHash, v, r, s) ||
-         !_checkSignsToRequiredFlag(documentHash, v, r, s)) {
+        address[] memory _users = decodeAll(documentHash, v, r, s);
+        if (!_checkSignsToRequiredFlag(OWNERSHIP, _users)) {
             return;
         }
-        for(uint8 i = 0; i < v.length; ++i) {
-            signs[documentHash].push(Sign({ v: v[i], r: r[i], s: s[i] }));
+        for(uint8 i = 0; i < _users.length; ++i) {
+            require(!isSignedBy(documentHash, _users[i]), "Document is already signed!");
+            signs[documentHash][_users[i]] = (Sign({ v: v[i], r: r[i], s: s[i] }));
         }
         emit DocumentSaved(documentHash, currentStep);
         PropertyInterface _property = PropertyInterface(property);
-        assert(_property.approveOwnershipTransfer(buyers));
+        uint8[2][] memory _parts = new uint8[2][](buyers.length);
+        for(uint256 i = 0; i < buyers.length; ++i) {
+            _parts[0][i] = parts[buyers[i]][0];
+            _parts[1][i] = parts[buyers[i]][1];
+        }
+        assert(_property.approveOwnershipTransfer(buyers, _parts));
         emit OwnershipTransfer(true);
         _setStatus(DeedStatus.FINISHED);
     }
@@ -420,53 +416,38 @@ contract Deed is Owned, AddressChecker {
         _setStatus(DeedStatus.REJECTED);
     }
 
-    function currentPrice() public view returns(uint256) {
-        return price;
-    }
-
     function _nextStep() internal {
-        if(_checkBit(steps[currentStep].flag, DONE_STEP) &&
-         loadedDocuments[currentStep] >= steps[currentStep].requiredDocsCount) {
-            emit StepDone(steps[currentStep].stepType, currentStep);
+        if(_checkBit(steps[currentStep].flag, DONE_STEP)) {
             if(!_isFinalStep()) {
-                currentStep = steps[currentStep].nextStep;
+                currentStep = flow[currentStep];
             }
         }
-    }
-
-    function _controller() internal view returns(ControllerInterface) {
-        return controller;
     }
 
     function _token() internal view returns(TokenInterface) {
-        return TokenInterface(_controller().token());
+        return TokenInterface(controller.token());
     }
 
     function _feeCalc() internal view returns(FeeCalcInterface) {
-        return FeeCalcInterface(_controller().feeCalc());
+        return FeeCalcInterface(controller.feeCalc());
     }
 
     function _usersRegistry() internal view returns(UsersRegistryInterface) {
-        return UsersRegistryInterface(_controller().usersRegistry());
+        return UsersRegistryInterface(controller.usersRegistry());
     }
 
     function _isFinalStep() internal view returns(bool) {
-        return steps[currentStep].nextStep == 0;
+        return flow[currentStep] == 0;
     }
 
-    function _checkSignsToRequiredRole(bytes32 documentHash, uint8[] v, bytes32[] r, bytes32[] s) internal returns(bool) {
-        if(v.length != r.length || r.length != s.length) {
-            emit Error("Sign data must have identical size.");
-            return false;
-        }
+    function _checkSignsToRequiredRole(address[] _users) internal returns(bool) {
         uint256 roles = uint256(0);
-        for (uint256 _s = 0; _s < v.length; ++_s) {
-            address _user = decodeAddress(documentHash, v[_s], r[_s], s[_s]);
-            if (!_validateUserRole(_user)) {
-                emit RoleError("User's role are invalid.", _user);
+        for (uint256 i = 0; i < _users.length; ++i) {
+            if (!_validateUserRole(_users[i])) {
+                emit RoleError("User's role are invalid.", _users[i]);
                 return false;
             }
-            roles |= _usersRegistry().getUserRole(_user);
+            roles |= _usersRegistry().getUserRole(_users[i]);
         }
         if (roles != steps[currentStep].roles && !_checkBit(steps[currentStep].flag, SINGLE_ROLE)) {
             emit Error("Sign set doesn't match to required roles.");
@@ -475,18 +456,16 @@ contract Deed is Owned, AddressChecker {
         return true;
     }
 
-    function _checkSignsToRequiredFlag(bytes32 documentHash, uint8[] v, bytes32[] r, bytes32[] s) internal returns(bool) {
-        if(v.length != r.length || r.length != s.length) {
-            emit Error("Sign data must have identical size.");
-            return false;
+    function _checkSignsToRequiredFlag(uint8 flag, address[] _users) internal returns(bool) {
+        uint8 _flag;
+        for (uint256 i = 0; i < _users.length; ++i) {
+            _flag |= users[_users[i]];
         }
-        for (uint256 _s = 0; _s < v.length; ++_s) {
-            address _user = decodeAddress(documentHash, v[_s], r[_s], s[_s]);
-            if (!_checkBit(steps[currentStep].flag, users[_user])) {
-                emit RoleError("User's flag are invalid.", _user);
+        // Required all users flags
+        if (!_checkBit(_flag, flag)) {
+                emit Error("Flags are invalid.");
                 return false;
             }
-        }
         return true;
     }
 
@@ -504,6 +483,33 @@ contract Deed is Owned, AddressChecker {
         }
         status = _status;
         emit StatusUpdate(_status);
+    }
+
+    function _insertStep(StepInfo memory step, uint256 id) internal returns(bool) {
+        require(!_checkBit(steps[id].flag, DONE_STEP), "Insert before done!");
+        indexStep++;
+        steps[indexStep] = step;
+        uint256 prev = _findPrevious(id);
+        if(prev != 0) {
+            if(flow[prev] != 0) {
+                flow[indexStep] = flow[prev];
+            }
+            flow[prev] = indexStep;
+        }
+        else if(id == firstStep) {
+            firstStep = indexStep;
+        }
+        emit StepCreated(step.stepType, step.roles, step.flag);
+        _nextStep();
+    }
+
+    function _findPrevious(uint256 id) internal view returns(uint256) {
+        uint256 prev = 0;
+        for(uint256 current = firstStep; 
+                current != 0 && current != id; current = flow[current]) {
+            prev = current;
+        }
+        return prev;
     }
 
     function kill()

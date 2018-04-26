@@ -24,27 +24,26 @@ contract Escrow is Owned, AddressChecker {
 
     /// EVENTS ///
 
-    event PaymentReceived(uint8 move, address who, uint256 value);
-    event PaymentAssigned(uint8 move, uint8 unlockAt, address receiver, address returnTo, uint256 value);
-    event PaymentWithdrawn(uint8 move, address who, uint256 value);
+    event PaymentReceived(address who, uint256 value);
+    event PaymentAssigned(uint8 unlockAt, address receiver, address returnTo, uint256 value);
+    event PaymentWithdrawn(address who, uint256 value);
 
-    function Escrow(address _deed) public {
+    constructor (address _deed) public {
         require(_deed != address(0));
         deed = DeedInterface(_deed);
     }
 
-    function checkPayment(uint256 _price)
+    function checkPayment()
      public
      view
-     only(deed)
      returns(bool)
     {
-        return payment >= _price;
+        return payment >= deed.price();
     }
 
     function _setPayment(address _sender, uint256 _value) internal {
-        require(_value > 0);
-        emit PaymentReceived(move, _sender, _value);
+        require(_value > 0, "Value must be greater zero!");
+        emit PaymentReceived(_sender, _value);
         payment = _value;
     }
 

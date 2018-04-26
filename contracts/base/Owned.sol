@@ -10,8 +10,8 @@ pragma solidity ^0.4.18;
 contract Owned {
     address public contractOwner;
     address public pendingContractOwner;
-
-    function Owned() public {
+    
+    constructor () public {
         contractOwner = msg.sender;
     }
 
