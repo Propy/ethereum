@@ -34,7 +34,7 @@ contract EscrowInterface {
 }
 
 contract PropertyInterface {
-    function approveOwnershipTransfer(address[], uint8[2][]) public returns(bool);
+    function approveOwnershipTransfer(address[], uint16[]) public returns(bool);
     function rejectOwnershipTransfer() public returns(bool);
 }
 
@@ -93,7 +93,7 @@ contract Deed is Owned, AddressChecker {
     address public property;
     address[] public buyers;
     mapping(address => uint8) public users;
-    mapping(address => uint8[2]) public parts;
+    mapping(address => uint16) public parts;
 
     uint256 public price;
 
@@ -174,7 +174,7 @@ contract Deed is Owned, AddressChecker {
 
     function getStepFlow() public view returns(uint256[]) {
         uint256[] memory _flow = new uint256[](indexStep);
-        uint256 index = 0;
+        uint256 index = firstStep;
         for(uint256 i = 0; i < indexStep; ++i) {
             _flow[i] = index;
             index = flow[index];
@@ -266,14 +266,15 @@ contract Deed is Owned, AddressChecker {
      onlyStatus(DeedStatus.RESERVED)
      onlyContractOwner
     {
+        require(_users.length <= USERS_MAX, "Users too many!");
         if(_users.length != flags.length) {
             emit Error("Amount of users not equals to flags!");
             return;
         }
-        for(uint256 i = 0; i < _users.length && i < USERS_MAX; ++i) {
+        for(uint256 i = 0; i < _users.length; ++i) {
             users[_users[i]] = uint8(flags[i]);
             // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
-            if(_checkBit(uint8(flags[i]), BUYER) && !_checkBit(users[_users[i]], BUYER)) {
+            if(_checkBit(users[_users[i]], BUYER)) {
                 buyers.push(_users[i]);
             }
             emit UserSet(_users[i], _usersRegistry().getUserRole(_users[i]), uint8(flags[i]));
@@ -283,34 +284,33 @@ contract Deed is Owned, AddressChecker {
 
     function setUser(
         address user,
-        bytes1 flag
+        uint8 flag
     )
      public
      onlyStatus(DeedStatus.STARTED)
      onlyContractOwner
     {
+        users[user] = flag;
         // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
-        if(_checkBit(uint8(flag), BUYER) && !_checkBit(users[user], BUYER)) {
+        if(_checkBit(users[user], BUYER)) {
             buyers.push(user);
         }
-        users[user] = uint8(flag);
-        emit UserSet(user, _usersRegistry().getUserRole(user), uint8(flag));
+        emit UserSet(user, _usersRegistry().getUserRole(user), flag);
     }
 
     function setBuyersParts(
         address[] _buyers,
-        uint8[2][] _parts
+        uint16[] _parts
     )
      public
      onlyStatus(DeedStatus.STARTED)
      onlyContractOwner
     {
-        require(_buyers.length == _parts[0].length && _parts[0].length == _parts[1].length, "Arrays has not equals length!");
+        require(_buyers.length == _parts.length, "Arrays has not equals length!");
         require(_buyers.length == buyers.length, "Input array does not correct!");
         for (uint256 i = 0; i < _buyers.length && i < USERS_MAX; ++i) {
             require(_checkBit(users[_buyers[i]], BUYER), "Some user not a buyer!");
-            parts[_buyers[i]][0] = _parts[0][i];
-            parts[_buyers[i]][1] = _parts[1][i];
+            parts[_buyers[i]] = _parts[i];
         }
     }
 
@@ -318,6 +318,7 @@ contract Deed is Owned, AddressChecker {
      external
      onlyStatus(DeedStatus.STARTED)
     {
+        _nextStep();
         require(!_checkBit(steps[currentStep].flag, DONE_STEP), "Step is already done!");
         address[] memory _users = decodeAll(documentHash, v, r, s);
         if (!_checkSignsToRequiredRole(_users) ||
@@ -339,7 +340,6 @@ contract Deed is Owned, AddressChecker {
             emit StepDone(steps[currentStep].stepType, currentStep);
         }
         emit DocumentSaved(documentHash, currentStep);
-        _nextStep();
     }
 
     function payFee()
@@ -394,10 +394,9 @@ contract Deed is Owned, AddressChecker {
         }
         emit DocumentSaved(documentHash, currentStep);
         PropertyInterface _property = PropertyInterface(property);
-        uint8[2][] memory _parts = new uint8[2][](buyers.length);
+        uint16[] memory _parts = new uint16[](buyers.length);
         for(uint256 i = 0; i < buyers.length; ++i) {
-            _parts[0][i] = parts[buyers[i]][0];
-            _parts[1][i] = parts[buyers[i]][1];
+            _parts[i] = parts[buyers[i]];
         }
         assert(_property.approveOwnershipTransfer(buyers, _parts));
         emit OwnershipTransfer(true);
@@ -461,7 +460,6 @@ contract Deed is Owned, AddressChecker {
         for (uint256 i = 0; i < _users.length; ++i) {
             _flag |= users[_users[i]];
         }
-        // Required all users flags
         if (!_checkBit(_flag, flag)) {
                 emit Error("Flags are invalid.");
                 return false;
@@ -500,7 +498,6 @@ contract Deed is Owned, AddressChecker {
             firstStep = indexStep;
         }
         emit StepCreated(step.stepType, step.roles, step.flag);
-        _nextStep();
     }
 
     function _findPrevious(uint256 id) internal view returns(uint256) {
