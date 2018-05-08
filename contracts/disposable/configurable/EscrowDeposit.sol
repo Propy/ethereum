@@ -14,6 +14,7 @@ contract EscrowDeposit is Escrow {
      external
      onlyContractOwner
     {
+        require(!locked, "Escrow session is locked!");
         require((depositAmount + _value) > depositAmount, "Wrong math!");
         depositAmount += _value;
         emit Deposit(_value, depositAmount);

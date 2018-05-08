@@ -21,6 +21,7 @@ contract Escrow is Owned, AddressChecker {
     DeedInterface public deed;
 
     uint256 public payment;
+    bool public locked;
 
     /// EVENTS ///
 
@@ -39,6 +40,15 @@ contract Escrow is Owned, AddressChecker {
      returns(bool)
     {
         return payment >= deed.price();
+    }
+
+    function setLocked(bool _locked)
+     public
+     only(deed)
+     returns(bool previous)
+    {
+        previous = locked;
+        locked = _locked;
     }
 
     function _setPayment(address _sender, uint256 _value) internal {
