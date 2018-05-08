@@ -19,12 +19,12 @@ const Contracts = [
     //EscrowToken
 ];
 
+const CONTROLLER = "0x3cab760b6da28f172df75a3ca1f3662fb0e694ac";
+
 module.exports = (deployer, network, users) => {
-    if (network === 'test' || network === 'rinkeby') {
+    if (network === 'mainnet_parity_test') {
         deployer.deploy(ProxyFactory)
-        .then(() => deployer.deploy(Deed, 0))
-        //.then(() => deployer.deploy(Property, 0, [users[0], users[1], users[2]], "test", "test st.", "http://localhost", 0, 222))
-        //.then(() => deployer.deploy(EscrowDeposit, Deed.address))
+        .then(() => deployer.deploy(Deed, CONTROLLER))
         .then(() => {
             console.log("Configurable Deed Environment:");
             for(let contract of Contracts) {

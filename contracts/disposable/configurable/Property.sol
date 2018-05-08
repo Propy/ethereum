@@ -30,7 +30,7 @@ contract NewProperty is Owned, AddressChecker {
     address public newVersion;
 
     address[] public owners;
-    mapping(address => uint8[2]) public part;
+    mapping(address => uint16) public part;
 
     modifier onlyStatus(Status _status) {
         if (status == _status) {
@@ -50,6 +50,12 @@ contract NewProperty is Owned, AddressChecker {
     event OwnerChanged(address property, address[] owners);
     event StatusChanged(address property, uint8 to);
     event Migrated(address to);
+
+    function getUsersPart(address user) public view returns(uint8, uint8) {
+        uint8 num = uint8((part[user] >> 8));
+        uint8 denom = uint8(part[user]);
+        return (num, denom);
+    }
 
     constructor (
         address _previousVersion,
@@ -89,15 +95,15 @@ contract NewProperty is Owned, AddressChecker {
         return true;
     }
 
-    function approveOwnershipTransfer(address[] _newOwners, uint8[2][] _parts)
+    function approveOwnershipTransfer(address[] _newOwners, uint16[] _parts)
      public
      onlyStatus(Status.PENDING)
      only(currentDeed)
      returns(bool)
     {
+        delete owners;
         for (uint256 i = 0; i < _newOwners.length; ++i) {
-            part[_newOwners[i]][0] = _parts[0][i];
-            part[_newOwners[i]][1] = _parts[1][i];
+            part[_newOwners[i]] = _parts[i];
             owners.push(_newOwners[i]);
         }
         status = Status.OWNED;

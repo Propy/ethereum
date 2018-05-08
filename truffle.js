@@ -46,6 +46,12 @@ module.exports = {
             provider: () => new Provider(PrivateKey.Mainnet[0], Remotes.Mainnet.Geth),
             gas: 5000000,
             gasPrice: web3.toWei(4, 'gwei')
+        },
+        mainnet_parity_test: {
+            network_id: 1,
+            provider: () => new Provider(PrivateKey.Mainnet[1], Remotes.Mainnet.Parity),
+            gas: 5000000,
+            gasPrice: web3.toWei(4, 'gwei')
         }
     },
     solc: {

@@ -79,8 +79,8 @@ contract Deed is Owned, AddressChecker {
     DeedStatus public status;
 
     mapping(uint256 => StepInfo) public steps;
-    mapping(uint256 => uint256) public flow;
-    mapping(uint256 => uint8) public loadedDocuments;
+    mapping(uint256 => uint256) private flow;
+    mapping(uint256 => uint8) private loadedDocuments;
     mapping(bytes32 => mapping(address => Sign)) private signs;
 
     uint256 private firstStep;
@@ -102,10 +102,10 @@ contract Deed is Owned, AddressChecker {
     event RoleError(string message, address user);
     event StatusUpdate(DeedStatus status);
     event FeePaid(address payer, uint256 value);
-    event StepCreated(bytes4 stepType, uint256 roles, uint8 flag);
-    event StepDone(bytes4 stepType, uint256 step);
+    event StepCreated(bytes4 stepType, uint256 roles, uint8 flag, uint256 stepId);
+    event StepDone(bytes4 stepType, uint256 stepId);
     event UserSet(address user, uint256 role, uint8 flag);
-    event DocumentSaved(bytes32 documentHash, uint256 step);
+    event DocumentSaved(bytes32 documentHash, uint256 stepId);
     event OwnershipTransfer(bool success);
     event PriceChanged(uint256 oldPrice, uint256 newPrice);
 
@@ -274,7 +274,8 @@ contract Deed is Owned, AddressChecker {
         for(uint256 i = 0; i < _users.length; ++i) {
             users[_users[i]] = uint8(flags[i]);
             // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
-            if(_checkBit(users[_users[i]], BUYER)) {
+            if(_checkBit(users[_users[i]], BUYER) &&
+                    _usersRegistry().getUserRole(_users[i]) == 128) {
                 buyers.push(_users[i]);
             }
             emit UserSet(_users[i], _usersRegistry().getUserRole(_users[i]), uint8(flags[i]));
@@ -292,7 +293,8 @@ contract Deed is Owned, AddressChecker {
     {
         users[user] = flag;
         // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
-        if(_checkBit(users[user], BUYER)) {
+        if(_checkBit(users[user], BUYER) && 
+                _usersRegistry().getUserRole(user) == 128) {
             buyers.push(user);
         }
         emit UserSet(user, _usersRegistry().getUserRole(user), flag);
@@ -497,7 +499,7 @@ contract Deed is Owned, AddressChecker {
         else if(id == firstStep) {
             firstStep = indexStep;
         }
-        emit StepCreated(step.stepType, step.roles, step.flag);
+        emit StepCreated(step.stepType, step.roles, step.flag, indexStep);
     }
 
     function _findPrevious(uint256 id) internal view returns(uint256) {
