@@ -42,6 +42,7 @@ contract EscrowToken is Escrow {
 
     /// For ERC223 Tokens
     function tokenFallback(address _who, uint256 _value, bytes) public {
+        require(!locked, "Escrow session is locked!");
         require(msg.sender == address(token));
         emit Deposit(_value, balance());
         _setPayment(_who, balance());
