@@ -39,7 +39,7 @@ module.exports = {
             network_id: 1,
             provider: () => new Provider(PrivateKey.Mainnet[0], Remotes.Mainnet.Parity),
             gas: 5000000,
-            gasPrice: web3.toWei(4, 'gwei')
+            gasPrice: web3.toWei(12, 'gwei')
         },
         mainnet_geth: {
             network_id: 1,
