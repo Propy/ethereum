@@ -4,7 +4,7 @@ import "../base/Owned.sol";
 import "./Property.sol";
 import "../tokens/ERC20.sol";
 
-contract Deed is Owned {
+contract OldDeedW is Owned {
 
   enum Status {
     reserve,

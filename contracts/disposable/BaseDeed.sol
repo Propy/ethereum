@@ -475,7 +475,7 @@ contract BaseDeed is Owned, AddressChecker {
     function _approveOwnershipTransfer(uint8 _move) internal {
         _payFee(_move);
         PropertyInterface Property = PropertyInterface(property);
-        assert(Property.approveOwnershipTransfer(buyer));
+        Property.approveOwnershipTransfer(buyer);
         OwnershipTransfer(_move, true);
     }
 
@@ -490,12 +490,12 @@ contract BaseDeed is Owned, AddressChecker {
 
         // Charge company fee
         address companyWallet = controller.companyWallet();
-        assert(companyWallet != address(0));
+        //assert(companyWallet != address(0));
         uint256 companyFee = FeeContract.getCompanyFee(price);
         assert(token.transfer(companyWallet, companyFee));
         // Charge network growth fee
         address networkGrowthPoolWallet = controller.networkGrowthPoolWallet();
-        assert(networkGrowthPoolWallet != address(0));
+        //assert(networkGrowthPoolWallet != address(0));
         uint256 networkGrowthFee = FeeContract.getNetworkGrowthFee(price);
         assert(token.transfer(networkGrowthPoolWallet, networkGrowthFee));
 
