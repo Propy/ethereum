@@ -65,6 +65,7 @@ contract DeedSimple is Owned, AddressChecker {
     struct StepInfo {
         bytes4 stepType;
         uint8 requiredDocsCount;
+        uint8 flag;
     }
 
     DeedStatus public status;
@@ -72,7 +73,7 @@ contract DeedSimple is Owned, AddressChecker {
     mapping(uint256 => StepInfo) public steps;
     mapping(uint256 => uint256) private flow;
     mapping(uint256 => uint8) private loadedDocuments;
-    mapping(bytes32 => address) private signs;
+    mapping(bytes32 => bool) public isLoadedDocument;
 
     uint256 private firstStep;
     uint256 private indexStep;
@@ -90,7 +91,6 @@ contract DeedSimple is Owned, AddressChecker {
 
     /// EVENTS
 
-    event RoleError(string message, address user);
     event StatusUpdate(DeedStatus status);
     event FeePaid(address payer, uint256 value);
     event StepCreated(bytes4 stepType, uint256 roles, uint8 flag, uint256 stepId);
@@ -125,7 +125,7 @@ contract DeedSimple is Owned, AddressChecker {
     }
 
     modifier checkFlagAccess(address _user, uint8 _flag) {
-        if (!_checkBit(users[_user], _flag)) {
+        if (!_checkBit(users[_user], _flag) && _user != contractOwner) {
             emit Error("User access denied!");
             return;
         }
@@ -168,7 +168,8 @@ contract DeedSimple is Owned, AddressChecker {
             uint8 _docs = uint8(counts[i]);
             _insertStep(StepInfo({
                 stepType: moves[i],
-                requiredDocsCount: _docs
+                requiredDocsCount: _docs,
+                flag: 0
             }), 0);
         }
         _setStatus(DeedStatus.PREPARED);
@@ -184,7 +185,8 @@ contract DeedSimple is Owned, AddressChecker {
         uint8 _docs = uint8(counts);
         _insertStep(StepInfo({
             stepType: stepType,
-            requiredDocsCount: _docs
+            requiredDocsCount: _docs,
+            flag: 0
         }), stepId);
     }
 
@@ -271,9 +273,8 @@ contract DeedSimple is Owned, AddressChecker {
     {
         _nextStep();
         require(!_checkBit(steps[currentStep].flag, DONE_STEP), "Step is already done!");
-        for(uint8 i = 0; i < v.length; ++i) {
-            loadedDocuments[currentStep]++;
-        }
+        loadedDocuments[currentStep]++;
+        isLoadedDocument[documentHash] = true;
         if (loadedDocuments[currentStep] >= steps[currentStep].requiredDocsCount) {
             steps[currentStep].flag |= DONE_STEP;
             emit StepDone(steps[currentStep].stepType, currentStep);
@@ -325,6 +326,7 @@ contract DeedSimple is Owned, AddressChecker {
      onlyContractOwner
     {
         emit DocumentSaved(documentHash, currentStep);
+        isLoadedDocument[documentHash] = true;
         PropertyInterface _property = PropertyInterface(property);
         uint16[] memory _parts = new uint16[](buyers.length);
         for(uint256 i = 0; i < buyers.length; ++i) {
@@ -371,10 +373,6 @@ contract DeedSimple is Owned, AddressChecker {
         return flow[currentStep] == 0;
     }
 
-    function _validateUserRole(address user) internal view returns(bool) {
-        return (_usersRegistry().getUserRole(user) & steps[currentStep].roles) == _usersRegistry().getUserRole(user);
-    }
-
     function _checkBit(uint8 _flag, uint8 _bit) internal pure returns(bool) {
         return (_flag & _bit) == _bit;
     }
@@ -401,7 +399,7 @@ contract DeedSimple is Owned, AddressChecker {
         else if(id == firstStep) {
             firstStep = indexStep;
         }
-        emit StepCreated(step.stepType, step.roles, step.flag, indexStep);
+        emit StepCreated(step.stepType, 0, step.flag, indexStep);
     }
 
     function _findPrevious(uint256 id) internal view returns(uint256) {
