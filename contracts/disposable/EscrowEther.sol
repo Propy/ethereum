@@ -1,11 +1,11 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.24;
 
 import "./EscrowBase.sol";
 
 
-contract EscrowEther is EscrowBase {
+contract EscrowEtherI is EscrowBase {
 
-    function EscrowEther(address _metaDeed, address _deed) EscrowBase(_metaDeed, _deed) {}
+    function EscrowEtherI(address _metaDeed, address _deed) EscrowBase(_metaDeed, _deed) {}
 
     // NOTE: Insist on increasing gas limit when sending ether here.
     function() public payable {

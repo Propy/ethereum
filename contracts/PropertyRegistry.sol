@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;
+pragma solidity 0.4.24;
 
 import './adapters/MultiEventsHistoryAdapter.sol';
 import "./adapters/RolesLibraryAdapter.sol";

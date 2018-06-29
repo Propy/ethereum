@@ -1,4 +1,4 @@
-pragma solidity 0.4.18;  // FIXME: cover with tests
+pragma solidity 0.4.24;  // FIXME: cover with tests
 
 
 /// @title Multisignature wallet - Allows multiple parties to agree on transactions before execution.

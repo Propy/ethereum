@@ -1,6 +1,7 @@
 "use strict";
 
 const Promise = require("bluebird");
+const Yaml = require("js-yaml");
 
 const { bytes32, ZERO_ADDRESS } = require('../test/helpers/helpers');
 const { contracts, multiSigOwners, parties } = require('../test/helpers/meta').networks.rinkeby;
@@ -21,6 +22,9 @@ const UsersRegistry = artifacts.require('./UsersRegistry.sol');
 const MultiEventsHistory = artifacts.require('./MultiEventsHistory.sol');
 const RolesLibrary = artifacts.require('./RolesLibrary.sol');
 const MultiSigWallet = artifacts.require('./MultiSigWallet.sol');
+const Deed = artifacts.require('Deed');
+const SimpleDeed = artifacts.require('DeedSimple');
+const ProxyFactory = artifacts.require('ProxyFactory');
 
 const allContracts = [
     DeedRegistry,
@@ -37,6 +41,9 @@ const allContracts = [
     MultiEventsHistory,
     RolesLibrary,
     MultiSigWallet,
+    Deed,
+    SimpleDeed,
+    ProxyFactory
 ];
 
 /**
@@ -48,7 +55,7 @@ const allContracts = [
  * async/await don't work here as for truffle@4.0.4 т-т
  */
 module.exports = async (deployer, network, accounts) => {
-    if (network === "rinkeby") {
+    if (network === 'test') {
         const OWNER = accounts[0];
 
         let storageManager;
@@ -245,8 +252,12 @@ module.exports = async (deployer, network, accounts) => {
             .then(() => deployer.deploy(MultiSigWallet, [OWNER], 1))
             .then(() => storage.forceChangeContractOwnership(MultiSigWallet.address))
             .then(() => storageManager.forceChangeContractOwnership(MultiSigWallet.address))
+            .then(() => deployer.deploy(ProxyFactory))
+            .then(() => deployer.deploy(Deed, 0))
+            .then(() => deployer.deploy(SimpleDeed, 0))
 
             .then(() => {
+                let contracts = {};
                 console.log('Accounts:');
                 for (let account of accounts) {
                     console.log(account);
@@ -254,8 +265,10 @@ module.exports = async (deployer, network, accounts) => {
                 console.log('\nEcosystem contracts:');
                 for (let contract of allContracts) {
                     console.log(`${contract.address}: ${contract._json.contractName}`);
+                    contracts[contract._json.contractName] = contract.address;
                 }
                 console.log();
+                console.log(Yaml.safeDump(contracts));
             })
 
 
