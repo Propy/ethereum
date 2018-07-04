@@ -1,11 +1,13 @@
 ##Propy contracts environment - The Ethereum blockchain part of the Propy project, provides secure and powerful tools for execution of real estate deals
 
-### Introduction
-
 ### Requirements
 - nodejs  
 `Ubuntu: sudo apt install nodejs`  
 `Mac OS: brew install nodejs`
+
+### Configuration
+Into file `./network_keys/api/infura` put your [Infura](https://infura.io) api key  
+Into file `./network_keys/private/wallets` put your wallet private keys
 
 ### Building
 To install all dependencies use this command:
@@ -13,6 +15,15 @@ To install all dependencies use this command:
 
 To compile all contracts use this one:
 - `npm run compile`
+
+### Console
+You can run console to interact with all compiled smart contracts  
+Use this command: `npm start <network>`  
+Allowed networks:
+- `rinkeby` Rinkeby(Clique) testnet
+- `ropsten` Ropsten(PoW) testnet
+- `kovan` Kovan(PoA) testnet
+- `mainnet` Ethereum Main network
 
 ### Testing
 - `npm run test`
