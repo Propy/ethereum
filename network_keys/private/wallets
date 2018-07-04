@@ -1,0 +1,6 @@
+module.exports = {
+    Rinkeby: "your private key",
+    Mainnet: "your private key",
+    Ropsten: "your private key",
+    Kovan: "your private key"
+};
