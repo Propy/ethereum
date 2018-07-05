@@ -7,7 +7,6 @@ const MetaDeedUkraine = artifacts.require('./MetaDeedUkraine.sol');
 const EscrowEther = artifacts.require('./EscrowEther.sol');
 const BaseDeed = artifacts.require('./BaseDeed.sol');
 
-const FakeCoin = artifacts.require('./FakeCoin.sol');
 const FeeCalc = artifacts.require('./FeeCalc.sol');
 const Mock = artifacts.require('./Mock.sol');
 const Property = artifacts.require("./Property.sol");
@@ -35,7 +34,6 @@ contract('DeedCalifornia', function(accounts) {
 
     afterEach('revert', base.reverter.revert);
 
-    const FakeCoinInterface = web3.eth.contract(FakeCoin.abi).at('0x0');
     const FeeCalcInterface = web3.eth.contract(FeeCalc.abi).at('0x0');
     const PropertyInterface = web3.eth.contract(Property.abi).at('0x0');
     const ControllerInterface = web3.eth.contract(PropertyController.abi).at('0x0');
