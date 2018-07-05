@@ -1,4 +1,4 @@
-##Propy contracts environment - The Ethereum blockchain part of the Propy project, provides secure and powerful tools for execution of real estate deals
+## Propy contracts environment - The Ethereum blockchain part of the Propy project, provides secure and powerful tools for execution of real estate deals
 
 ### Requirements
 - nodejs  
