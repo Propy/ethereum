@@ -261,42 +261,24 @@ contract Deed is Owned, AddressChecker {
         address[] _users,
         bytes flags
     )
-     public
-     onlyStatus(DeedStatus.RESERVED)
-     onlyContractOwner
+    public
+    onlyStatus(DeedStatus.RESERVED)
+    onlyContractOwner
     {
-        require(_users.length <= USERS_MAX, "Users too many!");
-        if(_users.length != flags.length) {
-            emit Error("Amount of users not equals to flags!");
-            return;
-        }
-        for(uint256 i = 0; i < _users.length; ++i) {
-            users[_users[i]] = uint8(flags[i]);
-            // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
-            if(_checkBit(users[_users[i]], BUYER) &&
-                    _usersRegistry().getUserRole(_users[i]) == 128) {
-                buyers.push(_users[i]);
-            }
-            emit UserSet(_users[i], _usersRegistry().getUserRole(_users[i]), uint8(flags[i]));
-        }
+        _setUsers(_users, flags);
         _setStatus(DeedStatus.STARTED);
     }
 
-    function setUser(
-        address user,
-        uint8 flag
+    function setUsers(
+        address[] _users,
+        bytes flags
     )
-     public
-     onlyStatus(DeedStatus.STARTED)
-     onlyContractOwner
+    public
+    onlyStatus(DeedStatus.STARTED)
+    onlyContractOwner
     {
-        users[user] = flag;
-        // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
-        if(_checkBit(users[user], BUYER) && 
-                _usersRegistry().getUserRole(user) == 128) {
-            buyers.push(user);
-        }
-        emit UserSet(user, _usersRegistry().getUserRole(user), flag);
+        _setUsers(_users, flags);
+        _setStatus(DeedStatus.STARTED);
     }
 
     function setBuyersParts(
@@ -499,6 +481,26 @@ contract Deed is Owned, AddressChecker {
             firstStep = indexStep;
         }
         emit StepCreated(step.stepType, step.roles, step.flag, indexStep);
+    }
+
+    function _setUsers(
+        address[] _users,
+        bytes flags
+    ) internal {
+        require(_users.length <= USERS_MAX, "Users too many!");
+        if(_users.length != flags.length) {
+            emit Error("Amount of users not equals to flags!");
+            return;
+        }
+        for(uint256 i = 0; i < _users.length; ++i) {
+            users[_users[i]] = uint8(flags[i]);
+            // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
+            if(_checkBit(users[_users[i]], BUYER) &&
+            _usersRegistry().getUserRole(_users[i]) == 128) {
+                buyers.push(_users[i]);
+            }
+            emit UserSet(_users[i], _usersRegistry().getUserRole(_users[i]), uint8(flags[i]));
+        }
     }
 
     function _findPrevious(uint256 id) internal view returns(uint256) {

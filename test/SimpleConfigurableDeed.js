@@ -39,6 +39,11 @@ const AdditionalBuyer = {
   Public: "0x795850c0a15462D3467326665AFf7023c4288A7E",
   Private: "0xf56a1fd8c2b9f22ad523f9b93e92dbbfb629c0a277f4bbd1aa58c545adfd3499",
   Flag: DeedFlags.Buyer
+};
+
+const AdditionalNotary = {
+    Public: "0x795850c0a15462D3467326665AFf7023c4281A2E",
+    Flag: DeedFlags.Ownership
 }
 
 const DeedStatus = {
@@ -95,6 +100,7 @@ contract('ConfigurableDeed (Ukraine flow)', (accounts) => {
           instance.create(Users.Buyer.Public, "John", "Dou", "BadGuy", UserRoles.User, Users.Buyer.Public);
           instance.create(Users.Notary.Public, "Willow", "Egbert", "UglyGuy", UserRoles.Notary, Users.Notary.Public);
           instance.create(AdditionalBuyer.Public, "Gabe", "Newell", "GameGuy", UserRoles.User, AdditionalBuyer.Public);
+          instance.create(AdditionalNotary.Public, "Howard", "Lovecraft", "FearGuy", UserRoles.Notary, AdditionalNotary.Public);
       });
       await ProxyFactory.deployed().then((instance) => {
           return instance.createProxy(Deed.address, encode_contructor(accounts[0], PropertyController.address));
@@ -160,14 +166,16 @@ contract('ConfigurableDeed (Ukraine flow)', (accounts) => {
     });
   });
 
-  it("should set new user", async() => {
-    await deed.setUser(
-        AdditionalBuyer.Public,
-        AdditionalBuyer.Flag
+  it("should set new users", async() => {
+    await deed.setUsers(
+        [AdditionalBuyer.Public, AdditionalNotary.Public],
+        '0x' + Object.values([AdditionalBuyer, AdditionalNotary]).map(v => v.Flag.toString(16)).map(n => n.length == 1 ? '0' + n : n).join('')
     )
     .then(async () => {
         let flag = await deed.users(AdditionalBuyer.Public);
         assert(flag == AdditionalBuyer.Flag);
+        let flagn = await deed.users(AdditionalNotary.Public);
+        assert(flagn == AdditionalNotary.Flag);
         let b1 = await deed.buyers(0);
         let b2 = await deed.buyers(1);
     });
