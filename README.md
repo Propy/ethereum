@@ -26,7 +26,7 @@ Allowed networks:
 - `mainnet` Ethereum Main network
 
 ### Testing
-- `npm run test`
+- `./run_tests.sh`
 
 ### Deploying contracts to network
 - `npm run migrate-test` to deploy to test network
