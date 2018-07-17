@@ -3,6 +3,11 @@ const DocumentRegistrar = artifacts.require("DocumentRegistrar");
 const FeeCalc = artifacts.require("FeeCalc");
 const StorageManagerInterface = artifacts.require("StorageManagerInterface");
 
+const Storage = artifacts.require("Storage");
+const RolesLibrary = artifacts.require("RolesLibrary");
+const ProxyFactory = artifacts.require("ProxyFactory");
+const StorageManager = artifacts.require("StorageManager");
+
 const Contracts = {
     Mainnet: {
         Storage: "0xe447bc92203eaf559b13b6ddbfdb54376ee256ee",
@@ -25,18 +30,18 @@ const Contracts = {
         StorageManager: "0x3672ba830db80e6ddebe78db53447d21cf4c49f4"
     },
     Test: {
-        Storage: "0xb103aaf380bbda4621cf96ece41bd54f8511753d",
+        Storage: Storage.address,
         Crate: "DocumentRegistry",
         CompanyWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
         NetworkWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
         Token: "0x60a954bb1e592785c75823ff961ff917d898044a",
-        RolesLibrary: "0x24fa3beb0f92a1663336fea52b467d1538f847ea",
-        ProxyFactory: "0x17e0139087554b07978f2f14c63ea91f0bd3b8c6",
-        StorageManager: "0x8a05e6766136103e6899b6eaf028afb1d2f1af94"
+        RolesLibrary: RolesLibrary.address,
+        ProxyFactory: ProxyFactory.address,
+        StorageManager: StorageManager.address
     }
-}
+};
 
-module.exports = (deployer, network) => {
+module.exports = (deployer, network, accounts) => {
     let contracts;
     switch(network) {
         case "mainnet":
