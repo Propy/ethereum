@@ -1,6 +1,6 @@
 pragma solidity 0.4.24;
 
-import "./basic/Owned.sol";
+import "../../base/Owned.sol";
 
 contract BaseDocument is Owned {
 
