@@ -1,8 +1,8 @@
 const Proxy = artifacts.require("UpdatableProxy");
 const DocumentRegistry = artifacts.require("DocumentRegistry");
 const DocumentRegistrar = artifacts.require("DocumentRegistrar");
-const StorageManagerInterface = artifacts.require("StorageManagerInterface");
-const MultiSigWalletInterface = artifacts.require("MultiSigWalletInterface");
+const StorageManagerInterface = artifacts.require("StorageManager");
+const MultiSigWalletInterface = artifacts.require("MultiSigWallet");
 
 const FeeCalc = artifacts.require("FeeCalc");
 

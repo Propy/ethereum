@@ -1,7 +1,6 @@
 const DocumentRegistry = artifacts.require("DocumentRegistry");
 const DocumentRegistrar = artifacts.require("DocumentRegistrar");
 const FeeCalc = artifacts.require("FeeCalc");
-const StorageManagerInterface = artifacts.require("StorageManagerInterface");
 
 const Storage = artifacts.require("Storage");
 const RolesLibrary = artifacts.require("RolesLibrary");
