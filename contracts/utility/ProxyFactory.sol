@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 pragma solidity 0.4.24;
+=======
+pragma solidity 0.4.23;
+>>>>>>> master
 
 contract ProxyFactory {
     event ProxyDeployed(address proxyAddress, address targetAddress);

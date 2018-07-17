@@ -48,7 +48,7 @@ const allContracts = [
  * async/await don't work here as for truffle@4.0.4 т-т
  */
 module.exports = async (deployer, network, accounts) => {
-    if (network === "rinkeby") {
+    if (network === "rinkeby" || network === 'test') {
         const OWNER = accounts[0];
 
         let storageManager;

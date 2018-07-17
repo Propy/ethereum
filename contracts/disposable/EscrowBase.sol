@@ -13,6 +13,7 @@ contract MetaDeedInterface {
 contract DeedInterface {
     function action(uint8, bytes32[], bytes32[], uint8) public returns(bool);
     function moves(uint8) public constant returns(uint8);
+    function price() public constant returns(uint256);
 }
 
 contract EscrowBase is Owned, AddressChecker {
@@ -110,6 +111,44 @@ contract EscrowBase is Owned, AddressChecker {
         return true;
     }
 
+    function reInit(uint256 _price, uint256[] _payments) public only(deed) returns(bool) {
+        if (_price <= 0) {
+            Error("Price can not be zero.");
+            return false;
+        }
+        if (_payments.length != metaDeed.getPaymentMovesCount()) {
+            Error("Payment arrays do not match.");
+            return false;
+        }
+
+        // FIXME: Do safe math checks
+        uint256 total;
+        for (uint8 p = 0; p < _payments.length; p++) {
+            if (_payments[p] <= 0) {
+                Error("Payment amount can not be zero.");
+                return false;
+            }
+            total += _payments[p];
+        }
+        // Ensure that `payments` include `price`.
+        if (total < _price) {
+            Error("Sum of all payments can not be less than Property price.");
+            return false;
+        }
+
+
+        for (uint8 i = 0; i < _payments.length; i++) {
+            uint8 move = metaDeed.paymentMoves(i);
+            require(move > 0);
+
+            payments[move] = _payments[i];
+            paymentMoves[i] = move;
+        }
+
+        currentMoveIndex = 0;  // Explicit assignment, just in case.
+        Initiated(total);
+        return true;
+    }
 
     function assignPayment(
         uint8 _paymentMove,
@@ -146,7 +185,7 @@ contract EscrowBase is Owned, AddressChecker {
 
         uint8 move = paymentMoves[currentMoveIndex];
         uint256 payment = payments[move];
-        require(_value == payment);
+        require(_value >= payment);
         PaymentReceived(move, _sender, _value);
 
         uint8 MOVE_STATUS_SUCCESS = 1;

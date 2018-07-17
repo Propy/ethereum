@@ -7,7 +7,7 @@ contract AddressChecker {
 
     modifier notNull(address _address) {
         if (_address == address(0)) {
-            Error("Null address.");
+            emit Error("Null address.");
             return;
         }
         _;
@@ -15,7 +15,7 @@ contract AddressChecker {
 
     modifier only(address _address) {
         if (msg.sender != _address) {
-            Error("Unathorized caller.");
+            emit Error("Unathorized caller.");
             return;
         }
         _;

@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 pragma solidity 0.4.24;
+=======
+pragma solidity 0.4.23;
+>>>>>>> master
 
 import './Escrow.sol';
 

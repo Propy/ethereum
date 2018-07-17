@@ -6,6 +6,9 @@ import "./EscrowBase.sol";
 contract EscrowOracle is EscrowBase {
 
     address oracle;
+    uint256 public depositAmount;
+
+    event Deposit(uint256 payment, uint256 sum);
 
     function EscrowOracle(address _metaDeed, address _deed, address _oracle) EscrowBase(_metaDeed, _deed) {
         oracle = _oracle;
@@ -17,7 +20,11 @@ contract EscrowOracle is EscrowBase {
     }
 
     function deposit(uint _payment) only(oracle) public {
-        _checkPayment(msg.sender, _payment);
+        depositAmount = depositAmount + _payment;
+        Deposit(_payment, depositAmount);
+        if (depositAmount > deed.price()) {
+            _checkPayment(msg.sender, depositAmount);
+        }
     }
 
     function _withdraw(address _payer, uint256 _payment) only(oracle) internal returns(bool) {
