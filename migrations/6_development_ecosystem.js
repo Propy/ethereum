@@ -126,15 +126,6 @@ module.exports = async (deployer, network, accounts) => {
             .then(() => deployer.deploy(
                 SimpleDeed, Property.address, 1000, accounts[0], accounts[1], ["Key"], ["Value"]
             ))
-            .then(() => SimpleDeed.deployed())
-            .then(async simpleDeed => {
-                console.log(simpleDeed)
-                equal(await simpleDeed.property(), Property.address);
-                equal(await simpleDeed.price(), 1000);
-                equal(await simpleDeed.seller(), accounts[0]);
-                equal(await simpleDeed.buyer(), accounts[1]);
-                equal(await simpleDeed.data(1, "Key"), bytes32("Value", true));
-            })
 
             // MultiSigWallet
             .then(() => deployer.deploy(
