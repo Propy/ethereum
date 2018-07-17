@@ -4,6 +4,11 @@ const DocumentRegistrar = artifacts.require("DocumentRegistrar");
 const StorageManagerInterface = artifacts.require("StorageManager");
 const MultiSigWalletInterface = artifacts.require("MultiSigWallet");
 
+const Storage = artifacts.require("Storage");
+const RolesLibrary = artifacts.require("RolesLibrary");
+const ProxyFactory = artifacts.require("ProxyFactory");
+const StorageManager = artifacts.require("StorageManager");
+
 const FeeCalc = artifacts.require("FeeCalc");
 
 const Contracts = {
@@ -30,15 +35,15 @@ const Contracts = {
         StorageManager: "0x3672ba830db80e6ddebe78db53447d21cf4c49f4"
     },
     Test: {
-        Storage: "0x4bdba6ab3b8e5481d430d6b6b2c86b797ff473a6",
+        Storage: Storage.address,
         Crate: "DocumentRegistry",
         CompanyWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
         NetworkWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
         Token: "0x60a954bb1e592785c75823ff961ff917d898044a",
-        RolesLibrary: "0x24fa3beb0f92a1663336fea52b467d1538f847ea",
-        ProxyFactory: "0xdc4469604057fcec96718a74795523d374dcabf2",
-        StorageManager: "0x2e907eec6094362fafc3901a2276b137d04307c2",
-        MultiSigWallet: "0xba1b33895d21747362ba41d55b18284bf4cb9c6f"
+        RolesLibrary: RolesLibrary.address,
+        ProxyFactory: ProxyFactory.address,
+        StorageManager: StorageManager.address,
+        MultiSigWallet: MultiSigWalletInterface.address
     }
 }
 
