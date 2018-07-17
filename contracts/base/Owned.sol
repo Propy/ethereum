@@ -10,13 +10,13 @@ pragma solidity ^0.4.18;
 contract Owned {
     address public contractOwner;
     address public pendingContractOwner;
-
-    function Owned() {
+    
+    constructor () public {
         contractOwner = msg.sender;
     }
 
     modifier onlyContractOwner() {
-        if (contractOwner == msg.sender) {
+        if (contractOwner == msg.sender || contractOwner == address(0)) {
             _;
         }
     }
@@ -30,7 +30,7 @@ contract Owned {
      *
      * @return success.
      */
-    function changeContractOwnership(address _to) onlyContractOwner() returns(bool) {
+    function changeContractOwnership(address _to) public onlyContractOwner returns(bool) {
         pendingContractOwner = _to;
         return true;
     }
@@ -42,7 +42,7 @@ contract Owned {
      *
      * @return success.
      */
-    function claimContractOwnership() returns(bool) {
+    function claimContractOwnership() public returns(bool) {
         if (pendingContractOwner != msg.sender) {
             return false;
         }
@@ -60,7 +60,7 @@ contract Owned {
      *
      * @return success.
      */
-    function forceChangeContractOwnership(address _to) onlyContractOwner returns(bool) {
+    function forceChangeContractOwnership(address _to) public onlyContractOwner returns(bool) {
         contractOwner = _to;
         return true;
     }

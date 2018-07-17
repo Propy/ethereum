@@ -175,6 +175,10 @@ library StorageInterface {
         Mapping innerMapping;
     }
 
+    struct Bytes32AddressMapping {
+        Mapping innerMapping;
+    }
+
     struct Set {
         UInt count;
         Mapping indexes;
@@ -182,6 +186,10 @@ library StorageInterface {
     }
 
     struct AddressesSet {
+        Set innerSet;
+    }
+
+    struct StringAddressSetMapping {
         Set innerSet;
     }
 
@@ -356,6 +364,10 @@ library StorageInterface {
         init(self.innerMapping, _id);
     }
 
+    function init(Bytes32AddressMapping storage self, bytes32 _id) internal {
+        init(self.innerMapping, _id);
+    }
+
     /// INIT SETS ///
 
     function init(Set storage self, bytes32 _id) internal {
@@ -368,12 +380,18 @@ library StorageInterface {
         init(self.innerSet, _id);
     }
 
-
+    function init(StringAddressSetMapping storage self, bytes32 _id) internal {
+        init(self.innerSet, _id);
+    }
 
     /// SET PRIMITIVES ///
 
     function set(Config storage self, UInt storage item, uint _value) internal {
         self.store.setUInt(self.crate, item.id, _value);
+    }
+
+    function set(Config storage self, UInt storage item, bytes32 _key, uint _value) internal {
+        self.store.setUInt(self.crate, keccak256(item.id, _key), _value);
     }
 
     function set(Config storage self, UInt8 storage item, uint8 _value) internal {
@@ -524,6 +542,10 @@ library StorageInterface {
         set(self, item.innerMapping, _key, bytes32(_value));
     }
 
+    function set(Config storage self, Bytes32AddressMapping storage item, bytes32 _key, address _value) internal {
+        set(self, item.innerMapping, _key, bytes32(_value));
+    }
+
 
     /// OPERATIONS ON SETS ///
 
@@ -539,6 +561,16 @@ library StorageInterface {
 
     function add(Config storage self, AddressesSet storage item, address _value) internal {
         add(self, item.innerSet, bytes32(_value));
+    }
+
+    function add(Config storage self, StringAddressSetMapping storage item, string _key, address _value) internal {
+        if (includes(self, item, _key, _value)) {
+            return;
+        }
+        uint newCount = count(self, item, _key) + 1;
+        set(self, item.innerSet.values, keccak256(_key, newCount), bytes32(_value));
+        set(self, item.innerSet.indexes, keccak256(_key), bytes32(_value), bytes32(newCount));
+        set(self, item.innerSet.count, keccak256(_key), newCount);
     }
 
     function remove(Config storage self, Set storage item, bytes32 _value) internal {
@@ -566,6 +598,10 @@ library StorageInterface {
 
     function get(Config storage self, UInt storage item) internal constant returns(uint) {
         return self.store.getUInt(self.crate, item.id);
+    }
+
+    function get(Config storage self, UInt storage item, bytes32 _key) internal constant returns(uint) {
+        return self.store.getUInt(self.crate, keccak256(item.id, _key));
     }
 
     function get(Config storage self, UInt8 storage item) internal constant returns(uint8) {
@@ -715,11 +751,19 @@ library StorageInterface {
         return uint(get(self, item.innerMapping, _key));
     }
 
+    function get(Config storage self, Bytes32AddressMapping storage item, bytes32 _key) internal constant returns(address) {
+        return address(get(self, item.innerMapping, _key));
+    }
+
 
     /// OPERATIONS ON SETS ///
 
     function includes(Config storage self, Set storage item, bytes32 _value) internal constant returns(bool) {
         return get(self, item.indexes, _value) != 0;
+    }
+
+    function includes(Config storage self, StringAddressSetMapping storage item, string _key, address _value) internal constant returns(bool) {
+        return get(self, item.innerSet.indexes, keccak256(_key), bytes32(_value)) != 0;
     }
 
     function includes(Config storage self, AddressesSet storage item, address _value) internal constant returns(bool) {
@@ -734,6 +778,10 @@ library StorageInterface {
         return count(self, item.innerSet);
     }
 
+    function count(Config storage self, StringAddressSetMapping storage item, string _key) internal constant returns(uint) {
+        return get(self, item.innerSet.count, keccak256(_key));
+    }
+
     function get(Config storage self, Set storage item) internal constant returns(bytes32[]) {
         uint valuesCount = count(self, item);
         bytes32[] memory result = new bytes32[](valuesCount);
@@ -743,12 +791,25 @@ library StorageInterface {
         return result;
     }
 
+    function get(Config storage self, StringAddressSetMapping storage item, string _key) internal constant returns(address[]) {
+        uint valuesCount = count(self, item, _key);
+        bytes32[] memory result = new bytes32[](valuesCount);
+        for (uint i = 0; i < valuesCount; i++) {
+            result[i] = get(self, item, _key, i);
+        }
+        return toAddresses(result);
+    }
+
     function get(Config storage self, AddressesSet storage item) internal constant returns(address[]) {
         return toAddresses(get(self, item.innerSet));
     }
 
     function get(Config storage self, Set storage item, uint _index) internal constant returns(bytes32) {
         return get(self, item.values, bytes32(_index + 1));
+    }
+
+    function get(Config storage self, StringAddressSetMapping storage item, string _key, uint _index) internal constant returns(bytes32) {
+        return get(self, item.innerSet.values, keccak256(_key, bytes32(_index + 1)));
     }
 
     function get(Config storage self, AddressesSet storage item, uint _index) internal constant returns(address) {
