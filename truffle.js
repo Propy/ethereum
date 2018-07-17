@@ -29,7 +29,7 @@ module.exports = {
             network_id: 1,
             provider: () => new Provider(Wallets.Mainnet, Infura.Mainnet),
             gas: 5000000,
-            gasPrice: web3.toWei(12, 'gwei')
+            gasPrice: web3.toWei(20, 'gwei')
         },
         ropsten: {
             network_id: 1,
