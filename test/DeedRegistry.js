@@ -70,7 +70,6 @@ contract('DeedRegistry', function(accounts) {
         
             equal(currentController, controller);
         
-            await assertExpectations();
         });
         
         it('should emit ServiceChanged after setting controller', async () => {

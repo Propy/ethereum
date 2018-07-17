@@ -75,7 +75,6 @@ contract('PropertyProxy', function (accounts) {
         
             equal(currentController, controller);
         
-            await assertExpectations();
         });
     
         it('should emit ServiceChanged after setting controller', async () => {
@@ -112,8 +111,6 @@ contract('PropertyProxy', function (accounts) {
                 property, to, {from: caller}
             ));
     
-            await propertyProxy.forcePropertyChangeContractOwnership(property, to, {from: caller});
-            await assertExpectations();
         });
     });
     

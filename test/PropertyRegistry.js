@@ -69,7 +69,6 @@ contract('PropertyRegistry', function(accounts) {
 
             equal(currentController, controller);
 
-            await assertExpectations();
         });
 
 

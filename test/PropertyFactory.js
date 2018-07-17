@@ -75,7 +75,6 @@ contract('PropertyFactory', function (accounts) {
 
             equal(currentController, controller);
 
-            await assertExpectations();
         });
 
         it('should return `true` when setting controller', async () => {
@@ -176,7 +175,6 @@ contract('PropertyFactory', function (accounts) {
 
             equal(currentProxy, Mock.address);
 
-            await assertExpectations();
         });
 
         it('should return `true` when setting proxy', async () => {
