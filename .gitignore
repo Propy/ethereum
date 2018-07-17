@@ -3,3 +3,10 @@ node_modules/
 .idea/
 .tmp/
 dist/
+.vscode/
+build/
+contracts__/
+package-lock.json
+test_env.pid
+run_test_env.sh
+stop_test_env.sh
