@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 pragma solidity 0.4.24;
-=======
-pragma solidity 0.4.23;
->>>>>>> master
 
 import "../../base/Owned.sol";
 import "../../base/AddressChecker.sol";
@@ -220,7 +216,6 @@ contract DeedSimple is Owned, AddressChecker {
      onlyStatus(DeedStatus.RESERVED)
      onlyContractOwner
     {
-<<<<<<< HEAD
         _setUsers(_users, flags);
         _setStatus(DeedStatus.STARTED);
     }
@@ -235,40 +230,6 @@ contract DeedSimple is Owned, AddressChecker {
     {
         _setUsers(_users, flags);
         _setStatus(DeedStatus.STARTED);
-=======
-        require(_users.length <= USERS_MAX, "Users too many!");
-        if(_users.length != flags.length) {
-            emit Error("Amount of users not equals to flags!");
-            return;
-        }
-        for(uint256 i = 0; i < _users.length; ++i) {
-            users[_users[i]] = uint8(flags[i]);
-            // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
-            if(_checkBit(users[_users[i]], BUYER) &&
-                    _usersRegistry().getUserRole(_users[i]) == 128) {
-                buyers.push(_users[i]);
-            }
-            emit UserSet(_users[i], _usersRegistry().getUserRole(_users[i]), uint8(flags[i]));
-        }
-        _setStatus(DeedStatus.STARTED);
-    }
-
-    function setUser(
-        address user,
-        uint8 flag
-    )
-     public
-     onlyStatus(DeedStatus.STARTED)
-     onlyContractOwner
-    {
-        users[user] = flag;
-        // FIXME: Possible mistaken remove BUYER bit without removing from buyers array
-        if(_checkBit(users[user], BUYER) && 
-                _usersRegistry().getUserRole(user) == 128) {
-            buyers.push(user);
-        }
-        emit UserSet(user, _usersRegistry().getUserRole(user), flag);
->>>>>>> master
     }
 
     function setBuyersParts(
@@ -423,7 +384,6 @@ contract DeedSimple is Owned, AddressChecker {
         emit StepCreated(step.stepType, 0, step.flag, indexStep);
     }
 
-<<<<<<< HEAD
     function _setUsers(
         address[] _users,
         bytes flags
@@ -444,8 +404,6 @@ contract DeedSimple is Owned, AddressChecker {
         }
     }
 
-=======
->>>>>>> master
     function _findPrevious(uint256 id) internal view returns(uint256) {
         uint256 prev = 0;
         for(uint256 current = firstStep; 

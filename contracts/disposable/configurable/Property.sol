@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 pragma solidity 0.4.24;
-=======
-pragma solidity 0.4.23;
->>>>>>> master
 
 import "../../base/Owned.sol";
 import "../../base/AddressChecker.sol";
