@@ -68,7 +68,7 @@ const contracts = [
  * async/await don't work here as for truffle@4.0.4 т-т
  */
 module.exports = async (deployer, network, accounts) => {
-    if (network === "development" || network === "test") {
+    if (network === "development") {
     //if (false) {
         const owner = accounts[0];
         const pseudo_controller = accounts[1];

@@ -1,6 +1,7 @@
 const DocumentRegistry = artifacts.require("DocumentRegistry");
 const DocumentRegistrar = artifacts.require("DocumentRegistrar");
 const FeeCalc = artifacts.require("FeeCalc");
+const MultiSigWalletInterface = artifacts.require("MultiSigWallet");
 
 const Storage = artifacts.require("Storage");
 const RolesLibrary = artifacts.require("RolesLibrary");
@@ -16,6 +17,7 @@ const Contracts = {
         Token: "0x4D64C4dfaa4a90816B92aeE1c011f7a941B0e61F",
         RolesLibrary: "0xCe24A670c8Ca0827A638ac9F46c6212BB8c2E7C4",
         ProxyFactory: "0x9d207257f410303a779837fa0b55e7cafb15fec6",
+        MultiSigWallet: "0x85570b347ebbaba3d5486ae04036534272eb9940",
         StorageManager: "0xdf9100ad45e30f5da06108348049bcf49f97472b"
     },
     Rinkeby: {
@@ -36,7 +38,8 @@ const Contracts = {
         Token: "0x60a954bb1e592785c75823ff961ff917d898044a",
         RolesLibrary: RolesLibrary.address,
         ProxyFactory: ProxyFactory.address,
-        StorageManager: StorageManager.address
+        StorageManager: StorageManager.address,
+        MultiSigWallet: MultiSigWalletInterface.address
     }
 };
 
@@ -52,6 +55,7 @@ module.exports = (deployer, network, accounts) => {
         default:
             contracts = Contracts.Test;
     }
+    let manager;
     deployer.deploy(
         DocumentRegistry,
         contracts.Storage,
@@ -62,6 +66,13 @@ module.exports = (deployer, network, accounts) => {
         contracts.Token,
         contracts.RolesLibrary
     )
+        .then(() => StorageManager.at(contracts.StorageManager))
+        .then(() => MultiSigWalletInterface.at(contracts.MultiSigWallet))
+        .then(sig => sig.submitTransaction(
+            contracts.StorageManager,
+            0,
+            web3.eth.contract(StorageManager.abi).at(0).giveAccess.getData(DocumentRegistry.address, contracts.Crate)
+        ))
         .then(() => deployer.deploy(DocumentRegistrar, DocumentRegistry.address, contracts.ProxyFactory))
         .then(() => {
             console.log("DocumentRegistry: " + DocumentRegistry.address);
