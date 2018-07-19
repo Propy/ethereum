@@ -170,17 +170,17 @@ contract('ConfigurableDeed (Ukraine flow)', (accounts) => {
         });
     });
 
-    it("should set new user", async() => {
-        await deed.setUser(
-            AdditionalBuyer.Public,
-            AdditionalBuyer.Flag
+    it("should set new users", async() => {
+        await deed.setUsers(
+            [AdditionalBuyer.Public],
+            '0x' + Object.values([AdditionalBuyer]).map(v => v.Flag.toString(16)).map(n => n.length == 1 ? '0' + n : n).join('')
         )
-        .then(async () => {
-            let flag = await deed.users(AdditionalBuyer.Public);
-            assert(flag == AdditionalBuyer.Flag);
-            let b1 = await deed.buyers(0);
-            let b2 = await deed.buyers(1);
-        });
+            .then(async () => {
+                let flag = await deed.users(AdditionalBuyer.Public);
+                assert(flag == AdditionalBuyer.Flag);
+                let b1 = await deed.buyers(0);
+                let b2 = await deed.buyers(1);
+            });
     });
 
     it("should set estate parts of buyers", async () => {
