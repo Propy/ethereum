@@ -28,10 +28,7 @@ contract Escrow is Owned, AddressChecker {
     event PaymentReceived(address who, uint256 value);
     event PaymentAssigned(uint8 unlockAt, address receiver, address returnTo, uint256 value);
     event PaymentWithdrawn(address who, uint256 value);
-<<<<<<< HEAD
     event PaymentDone(address who, uint256 value);
-=======
->>>>>>> master
 
     constructor (address _deed) public {
         require(_deed != address(0));
@@ -59,12 +56,9 @@ contract Escrow is Owned, AddressChecker {
         require(_value > 0, "Value must be greater zero!");
         emit PaymentReceived(_sender, _value);
         payment = _value;
-<<<<<<< HEAD
         if(checkPayment()) {
             emit PaymentDone(_sender, payment);
         }
-=======
->>>>>>> master
     }
 
 }
