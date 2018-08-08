@@ -61,4 +61,8 @@ contract Escrow is Owned, AddressChecker {
         }
     }
 
+    function getType() public pure returns(uint8) {
+        return 0;
+    }
+
 }

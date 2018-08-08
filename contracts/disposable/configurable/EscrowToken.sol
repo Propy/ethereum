@@ -48,4 +48,8 @@ contract EscrowToken is Escrow {
         _setPayment(_who, balance());
     }
 
+    function getType() public pure returns(uint8) {
+        return 3;
+    }
+
 }

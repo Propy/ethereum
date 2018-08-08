@@ -4,13 +4,16 @@ import './Escrow.sol';
 
 contract EscrowEther is Escrow {
 
+    address public userAddress;
     uint256 public depositAmount;
     mapping(address => uint256) public users;
 
     event Deposit(uint256 value, uint256 sum);
     event Withdraw(uint256 value, address to);
 
-    constructor (address _deed) Escrow(_deed) public {}
+    constructor (address _deed, address _userAddress) Escrow(_deed) public {
+        userAddress = _userAddress;
+    }
 
     function ()
      external
@@ -35,6 +38,15 @@ contract EscrowEther is Escrow {
         depositAmount -= _value;
         _who.transfer(_value);
         emit Withdraw(_value, _who);
+    }
+
+
+    function setUserAddress(address _userAddress) public onlyContractOwner {
+        userAddress = _userAddress;
+    }
+
+    function getType() public pure returns(uint8) {
+        return 2;
     }
 
 }

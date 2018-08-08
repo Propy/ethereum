@@ -21,4 +21,8 @@ contract EscrowDeposit is Escrow {
         _setPayment(msg.sender, depositAmount);
     }
 
+    function getType() public pure returns(uint8) {
+        return 1;
+    }
+
 }
