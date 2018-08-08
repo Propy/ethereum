@@ -32,7 +32,8 @@ const Contracts = {
         Token: "0xfdd09d5d1ee53a91416675a82062528fb7d9b657",
         RolesLibrary: "0xf58148001929a999a7b789f516b743ac7c7f7ea8",
         ProxyFactory: "0x228112c4e3db9fb048c53027c6ce305acbc936aa",
-        StorageManager: "0x3672ba830db80e6ddebe78db53447d21cf4c49f4"
+        StorageManager: "0x3672ba830db80e6ddebe78db53447d21cf4c49f4",
+        MultiSigWallet: "0x7453b6206770bd525b9b0ba49d88273dcf2706f2"
     },
     Test: {
         Storage: Storage.address,
@@ -68,11 +69,13 @@ module.exports = (deployer, network) => {
         .then(() => StorageManagerInterface.at(contracts.StorageManager))
         .then(man => manager = man)
         .then(() => MultiSigWalletInterface.at(contracts.MultiSigWallet))
-        .then(sig => sig.submitTransaction(
+        .then(sig => network !== "rinkeby" ? sig.submitTransaction(
             manager.address,
             0,
             web3.eth.contract(StorageManagerInterface.abi).at(0).giveAccess.getData(registry.address, contracts.Crate)
-        ))
+        ) :
+            manager.giveAccess(registry.address, contracts.Crate)
+        )
         .then(() => registry.proxy_init(
             contracts.Storage,
             contracts.Crate,
