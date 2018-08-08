@@ -17,7 +17,7 @@ contract FeeCalcUSD is Owned {
 
     using SafeMath for uint256;
 
-    FeeValue[] feeValues;
+    FeeValue[] public feeValues;
 
     uint256 public baseFee;
     //uint8 servifeFeeDivider;
@@ -53,6 +53,16 @@ contract FeeCalcUSD is Owned {
 
     function setFee(uint256 _baseFee) public onlyContractOwner {
         baseFee = _baseFee;
+    }
+
+    function setFeeValue(uint256 minPrice, uint256 maxPrice, uint256 fee, uint256 index) public onlyContractOwner {
+        require(index <= feeValues.length);
+        if (index < feeValues.length) {
+            feeValues[index] = FeeValue({minPrice: minPrice, maxPrice: maxPrice, fee: fee});
+        }
+        else {
+            feeValues.push(FeeValue({minPrice: minPrice, maxPrice: maxPrice, fee: fee}));
+        }
     }
 
 }
