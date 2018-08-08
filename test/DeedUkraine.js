@@ -25,8 +25,8 @@ const { topics } = require("./helpers/contracts");
 const reserve = require("./helpers/deeds/reserve");
 const setup = require("./helpers/setup");
 
-
-contract('DeedCalifornia', function(accounts) {
+// INFO: Skipped old tests
+contract.skip('DeedCalifornia', function(accounts) {
     let base = {};
     base.asserts = Asserts(assert);
     base.reverter = new Reverter(web3);

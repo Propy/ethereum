@@ -21,10 +21,10 @@ contract('StorageInterface', function(accounts) {
 
     before('setup', async () => {
         mock = await Mock.deployed();
-        storage = await Storage.deployed();
-        const managerMock = await ManagerMock.deployed();
+        storage = await Storage.new();
+        const managerMock = await ManagerMock.new();
         await storage.setManager(managerMock.address);
-        storageTester = await StorageTester.deployed();
+        storageTester = await StorageTester.new(storage.address, "TestCrate");
         await reverter.snapshot();
     });
 

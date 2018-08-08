@@ -163,7 +163,7 @@ contract('PropertyFactory', function (accounts) {
         });
 
         it("should check auth when setting proxy", async () => {
-            const caller = accounts[9];
+            const caller = accounts[0];
             const newProxy = accounts[8];
 
             await ignoreAuth(false);
@@ -173,7 +173,7 @@ contract('PropertyFactory', function (accounts) {
 
             const currentProxy = await propertyFactory.proxy.call();
 
-            equal(currentProxy, Mock.address);
+            equal(currentProxy, newProxy);
 
         });
 

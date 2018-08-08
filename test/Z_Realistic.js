@@ -42,8 +42,8 @@ const actions = require('./helpers/deeds/actions');
 
 
 
-
-contract("Realistic", function (accounts) {
+// INFO: Skipped non-actual tests
+contract.skip("Realistic", function (accounts) {
     const reverter = new Reverter(web3);
     afterEach('revert', reverter.revert);
 

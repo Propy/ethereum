@@ -289,7 +289,7 @@ contract('UsersRegistry', function (accounts) {
     
         it('should allow to remove user', async () => {
             await usersRegistry.create(
-                user, firstname, lastname, details, role, wallet, {from: controller}
+                user, firstname, lastname, details, role, wallet, {from: owner}
             );
     
             let result = await usersRegistry.getUser(user, {from: user});
@@ -313,20 +313,6 @@ contract('UsersRegistry', function (accounts) {
     
             let result = await usersRegistry.remove(user, {from: owner});
             assertLogs(result.logs, [{
-                address: MultiEventsHistory.address,
-                event: 'UserRemoved',
-                args: {
-                    self: usersRegistry.address,
-                    user: user
-                }
-            }]);
-    
-            await usersRegistry.create(
-                user, firstname, lastname, details, role, wallet, {from: owner}
-            );
-    
-            let result2 = await usersRegistry.remove(user, {from: controller});
-            assertLogs(result2.logs, [{
                 address: MultiEventsHistory.address,
                 event: 'UserRemoved',
                 args: {

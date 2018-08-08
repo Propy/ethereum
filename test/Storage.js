@@ -18,8 +18,9 @@ contract('Storage', function(accounts) {
     const CRATE = 'SomeCrate';
 
     before('setup', async () => {
-        storage = await Storage.deployed();
-        manager = await ManagerMock.deployed();
+        storage = await Storage.new();
+        manager = await ManagerMock.new();
+        await storage.setManager(manager.address);
         await reverter.snapshot();
     });
 

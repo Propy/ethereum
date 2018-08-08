@@ -21,7 +21,6 @@ contract('RolesLibrary', function (accounts) {
     const unauthorized = accounts[2];
 
     let storage;
-    let storageManager;
     let multiEventsHistory;
     let rolesLibrary;
     let rolesLibraryInterface = web3.eth.contract(RolesLibrary.abi).at('0x0');
@@ -36,10 +35,9 @@ contract('RolesLibrary', function (accounts) {
         
         mock = await Mock.deployed();
         await ignoreAuth();
-        managerMock = await ManagerMock.deployed();
-        storage = await Storage.deployed();
+        managerMock = await ManagerMock.new();
+        storage = await Storage.new();
         
-        storageManager = await StorageManager.deployed();
         multiEventsHistory = await MultiEventsHistory.deployed();
         rolesLibrary = await RolesLibrary.deployed();
     

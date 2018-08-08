@@ -48,7 +48,7 @@ contract("MultiSigWallet", function (accounts) {
 
     before("setup", async () => {
         mock = await Mock.deployed();
-        multiSigWallet = await MultiSigWallet.deployed();
+        multiSigWallet = await MultiSigWallet.new(owners, 2);
 
         assertExpectations = AssertExpectations(mock);
 
@@ -82,14 +82,14 @@ contract("MultiSigWallet", function (accounts) {
             const tx = await multiSigWallet.submitTransaction(Mock.address, 0, defaultData, {from: owners[0]});
             assertLogs(tx.logs, [
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Submission",
                     args: {
                         transactionId: 0
                     }
                 },
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Confirmation",
                     args: {
                         sender: owners[0],
@@ -178,7 +178,7 @@ contract("MultiSigWallet", function (accounts) {
 
             assertLogs(logs, [
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Confirmation",
                     args: {
                         sender: owners[1],
@@ -186,7 +186,7 @@ contract("MultiSigWallet", function (accounts) {
                     }
                 },
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Execution",
                     args: {
                         transactionId: 0
@@ -356,23 +356,30 @@ contract("MultiSigWallet", function (accounts) {
             await multiSigWallet.submitTransaction(Mock.address, 0, defaultData, {from: owners[0]});
             
 
-            await mock.expect(MultiSigWallet.address, 0, fillData(defaultData, 1), "throw");
+            await mock.expect(multiSigWallet.address, 0, fillData(defaultData, 1), "throw");
 
             let { logs, destination, value, calldata, executed } = await multiSigAction("confirmTransaction", [0], owners[1]);
             equal(destination, Mock.address);
             equal(value, 0);
             equal(calldata, defaultData)
-            assert.isFalse(executed);
-            equal(logs[logs.length - 1].event, "ExecutionFailure");
             await mock.popExpectation();
 
-            const txInfo = await multiSigAction("executeTransaction", [0], owners[1]);
-            assert.isTrue(txInfo.executed);
-            assertLogs(txInfo.logs, [{
-                address: MultiSigWallet.address,
-                event: "Execution",
-                args: { transactionId: 0 }
-            }]);
+            assert.isTrue(executed);
+            assertLogs(logs, [
+                {
+                    address: multiSigWallet.address,
+                    event: "Confirmation",
+                    args: {
+                        sender: owners[1],
+                        transactionId: 0
+                    }
+                },
+                {
+                    address: multiSigWallet.address,
+                    event: "Execution",
+                    args: {transactionId: 0 }
+                }
+            ]);
 
             await assertState(multiSigWallet, {
                 transactionCount: [{exp: 1}],
@@ -398,7 +405,7 @@ contract("MultiSigWallet", function (accounts) {
             assert.isTrue(txInfo.executed);
             assertLogs(txInfo.logs, [
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Confirmation",
                     args: {
                         sender: owners[1],
@@ -406,7 +413,7 @@ contract("MultiSigWallet", function (accounts) {
                     }
                 },
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Execution",
                     args: { transactionId: 0 }
                 }
@@ -445,7 +452,7 @@ contract("MultiSigWallet", function (accounts) {
             const txInfo = await multiSigAction("executeTransaction", [0], owners[1]);
             assert.isTrue(txInfo.executed);
             assertLogs(txInfo.logs, [{
-                address: MultiSigWallet.address,
+                address: multiSigWallet.address,
                 event: "Execution",
                 args: { transactionId: 0 }
             }]);
@@ -476,17 +483,17 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should fail execution when adding already existing owner", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("addOwner", [owners[0]]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("addOwner", [owners[0]]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assertLogs(txInfo.logs, [
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Confirmation",
                     args: { sender: owners[1], transactionId: 0 }
                 },
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "ExecutionFailure",
                     args: { transactionId: 0 }
                 }
@@ -511,17 +518,17 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should revert when adding zero address owner", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("addOwner", [ZERO_ADDRESS]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("addOwner", [ZERO_ADDRESS]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assertLogs(txInfo.logs, [
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Confirmation",
                     args: { sender: owners[1], transactionId: 0 }
                 },
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "ExecutionFailure",
                     args: { transactionId: 0 }
                 }
@@ -548,7 +555,7 @@ contract("MultiSigWallet", function (accounts) {
         it("should revert when adding an owner over the maximum limit", async () => {
             for (let i = 0; i <= 6; i++) {
                 let addData = multiSigData("addOwner", [i + 1]);
-                await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, addData, {from: owners[0]});
+                await multiSigWallet.submitTransaction(multiSigWallet.address, 0, addData, {from: owners[0]});
                 const { executed } = await multiSigAction("confirmTransaction", [i], owners[1]);
                 assert.isTrue(executed);
             }
@@ -556,7 +563,7 @@ contract("MultiSigWallet", function (accounts) {
             equal(currentOwners.length, 10);
 
             let addData = multiSigData("addOwner", [accounts[8]]);
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, addData, {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, addData, {from: owners[0]});
             const { logs, executed } = await multiSigAction("confirmTransaction", [7], owners[1]);
             assert.isFalse(executed);
             assertLogs(logs, [
@@ -621,22 +628,22 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should add an owner using correct data", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("addOwner", [unauthorized]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("addOwner", [unauthorized]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assertLogs(txInfo.logs, [
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Confirmation",
                     args: { sender: owners[1], transactionId: 0 }
                 },
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "OwnerAddition",
                     args: { owner: unauthorized }
                 },
                 {
-                    address: MultiSigWallet.address,
+                    address: multiSigWallet.address,
                     event: "Execution",
                     args: { transactionId: 0 }
                 }
@@ -671,7 +678,7 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should fail transaction when removing non-existing owner", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("removeOwner", [unauthorized]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("removeOwner", [unauthorized]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isFalse(txInfo.executed);
@@ -705,14 +712,14 @@ contract("MultiSigWallet", function (accounts) {
         it("should remove owners with correct data and change required signatures number when decreasing owners to less than required number", async () => {
             let txInfo;
 
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("removeOwner", [owners[2]]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("removeOwner", [owners[2]]), {from: owners[0]});
             
             txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isTrue(txInfo.executed);
             equal((await multiSigWallet.getOwners()).length, 2);
             equal(await multiSigWallet.required(), 2);
 
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("removeOwner", [owners[1]]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("removeOwner", [owners[1]]), {from: owners[0]});
             equal(await multiSigWallet.transactionCount(), 2);
             txInfo = await multiSigAction("confirmTransaction", [1], owners[1]);
             assert.isTrue(txInfo.executed);
@@ -745,7 +752,7 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should fail transaction when replacing non-existing owner", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("replaceOwner", [unauthorized, unauthorized]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("replaceOwner", [unauthorized, unauthorized]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isFalse(txInfo.executed);
@@ -778,7 +785,7 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should fail transaction when replacing to existing owner", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("replaceOwner", [owners[2], owners[1]]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("replaceOwner", [owners[2], owners[1]]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isFalse(txInfo.executed);
@@ -811,7 +818,7 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should fail transaction when replacing non-existing owner to existing owner", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("replaceOwner", [unauthorized, owners[1]]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("replaceOwner", [unauthorized, owners[1]]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isFalse(txInfo.executed);
@@ -844,7 +851,7 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should replace an owner using correct data", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("replaceOwner", [owners[2], unauthorized]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("replaceOwner", [owners[2], unauthorized]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isTrue(txInfo.executed);
@@ -892,7 +899,7 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should fail transaction when changing a requirement to zero", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("changeRequirement", [0]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("changeRequirement", [0]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isFalse(txInfo.executed);
@@ -925,7 +932,7 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should fail transaction when changing a requirement to more than owners.length number", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("changeRequirement", [4]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("changeRequirement", [4]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isFalse(txInfo.executed);
@@ -958,7 +965,7 @@ contract("MultiSigWallet", function (accounts) {
         });
 
         it("should change a requirement using correct data", async () => {
-            await multiSigWallet.submitTransaction(MultiSigWallet.address, 0, multiSigData("changeRequirement", [1]), {from: owners[0]});
+            await multiSigWallet.submitTransaction(multiSigWallet.address, 0, multiSigData("changeRequirement", [1]), {from: owners[0]});
             
             const txInfo = await multiSigAction("confirmTransaction", [0], owners[1]);
             assert.isTrue(txInfo.executed);

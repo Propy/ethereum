@@ -132,7 +132,14 @@ contract('PropertyController', function(accounts) {
 
     before('setup', async () => {
         mock = await Mock.deployed();
-        property = await Property.deployed();
+        property = await Property.new(
+            "0",
+            [Mock.address],
+            "",
+            "",
+            "",
+            0
+        );
         propertyController = await PropertyController.deployed();
         multiEventsHistory = await MultiEventsHistory.deployed();
 
