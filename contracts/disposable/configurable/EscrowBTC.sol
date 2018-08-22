@@ -8,10 +8,7 @@ contract EscrowBTC is Escrow {
     string public systemWallet;
     uint256 public depositAmount;
 
-    event DepositBTC(uint256 value, uint256 sum, string who, bytes32 transactionHash);
-    event WithdrawBTC(uint256 value, string to, bytes32 transactionHash);
-
-    constructor (address _deed, string _wallet, string _systemWallet) Escrow(_deed) {
+    constructor (address _deed, string _wallet, string _systemWallet) public Escrow(_deed) {
         userWallet = _wallet;
         systemWallet = _systemWallet;
     }
@@ -24,8 +21,7 @@ contract EscrowBTC is Escrow {
         uint256 _value = value;
         require((depositAmount + _value) > depositAmount, "Wrong value!");
         depositAmount += _value;
-        emit DepositBTC(_value, depositAmount, who, transactionHash);
-        _setPayment(msg.sender, depositAmount);
+        _receive(who, depositAmount, transactionHash);
     }
 
     function btcWithdraw(string to, uint256 value, bytes32 txHash)
@@ -36,7 +32,7 @@ contract EscrowBTC is Escrow {
         require((depositAmount - value) < depositAmount, "Wrong value!");
         require(depositAmount >= value, "Contract hasn't need money!");
         depositAmount -= value;
-        emit WithdrawBTC(value, to, txHash);
+        _withdraw(to, value, txHash);
     }
 
     function setUserWallet(string _userWallet) public onlyContractOwner {

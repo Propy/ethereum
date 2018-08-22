@@ -11,9 +11,6 @@ contract EscrowToken is Escrow {
 
     ERC20Interface public token;
 
-    event Deposit(uint256 value, uint256 sum);
-    event Withdraw(uint256 value, address who);
-
     constructor (address _deed, address _token) Escrow(_deed) public {
         token = ERC20Interface(_token);
     }
@@ -37,15 +34,14 @@ contract EscrowToken is Escrow {
         require(!locked, "Escrow session is locked!");
         require(balance() >= _value, "Contract hasn't money!");
         token.transfer(_who, _value);
-        emit Withdraw(_value, _who);
+        _withdraw(_who, _value);
     }
 
     /// For ERC223 Tokens
     function tokenFallback(address _who, uint256 _value, bytes) public {
         require(!locked, "Escrow session is locked!");
         require(msg.sender == address(token));
-        emit Deposit(_value, balance());
-        _setPayment(_who, balance());
+        _receive(_who, _value);
     }
 
     function getType() public pure returns(uint8) {

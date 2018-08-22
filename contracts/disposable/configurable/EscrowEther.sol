@@ -8,9 +8,6 @@ contract EscrowEther is Escrow {
     uint256 public depositAmount;
     mapping(address => uint256) public users;
 
-    event Deposit(uint256 value, uint256 sum);
-    event Withdraw(uint256 value, address to);
-
     constructor (address _deed, address _userAddress) Escrow(_deed) public {
         userAddress = _userAddress;
     }
@@ -24,8 +21,7 @@ contract EscrowEther is Escrow {
         require((depositAmount + _value) > depositAmount, "Wrong value!");
         depositAmount += _value;
         users[msg.sender] += _value;
-        emit Deposit(_value, depositAmount);
-        _setPayment(msg.sender, depositAmount);
+        _receive(msg.sender, depositAmount);
     }
 
     function withdraw(address _who, uint256 _value)
@@ -37,7 +33,7 @@ contract EscrowEther is Escrow {
         require(depositAmount >= _value, "Contract hasn't need money!");
         depositAmount -= _value;
         _who.transfer(_value);
-        emit Withdraw(_value, _who);
+        _withdraw(_who, _value);
     }
 
 
