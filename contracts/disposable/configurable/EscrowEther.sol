@@ -21,7 +21,7 @@ contract EscrowEther is Escrow {
         require((depositAmount + _value) > depositAmount, "Wrong value!");
         depositAmount += _value;
         users[msg.sender] += _value;
-        _receive(msg.sender, depositAmount);
+        _receive(msg.sender, _value);
     }
 
     function withdraw(address _who, uint256 _value)
@@ -43,6 +43,10 @@ contract EscrowEther is Escrow {
 
     function getType() public pure returns(uint8) {
         return 2;
+    }
+
+    function currencyCode() public view returns(bytes4) {
+        return bytes4("ETH");
     }
 
 }

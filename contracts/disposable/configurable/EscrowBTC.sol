@@ -21,7 +21,7 @@ contract EscrowBTC is Escrow {
         uint256 _value = value;
         require((depositAmount + _value) > depositAmount, "Wrong value!");
         depositAmount += _value;
-        _receive(who, depositAmount, transactionHash);
+        _receive(who, value, transactionHash);
     }
 
     function btcWithdraw(string to, uint256 value, bytes32 txHash)
@@ -41,6 +41,10 @@ contract EscrowBTC is Escrow {
 
     function getType() public pure returns(uint8) {
         return 4;
+    }
+
+    function currencyCode() public view returns(bytes4) {
+        return bytes4("BTC");
     }
 
 }

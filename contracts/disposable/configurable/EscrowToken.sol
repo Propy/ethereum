@@ -5,6 +5,7 @@ import './Escrow.sol';
 contract ERC20Interface {
     function transfer(address, uint256) public returns(bool);
     function balanceOf(address) public constant returns(uint256);
+    function symbol() public constant returns(string);
 }
 
 contract EscrowToken is Escrow {
@@ -46,6 +47,13 @@ contract EscrowToken is Escrow {
 
     function getType() public pure returns(uint8) {
         return 3;
+    }
+
+    function currencyCode() public view returns(bytes4 result) {
+        string memory sym = token.symbol();
+        assembly {
+            result := mload(add(sym, 32))
+        }
     }
 
 }

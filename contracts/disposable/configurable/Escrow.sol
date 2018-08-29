@@ -92,4 +92,8 @@ contract Escrow is Owned, AddressChecker {
         return 0;
     }
 
+    function currencyCode() public view returns(bytes4) {
+        return bytes4(0);
+    }
+
 }
