@@ -114,7 +114,7 @@ contract('ConfigurableDeed (Ukraine flow)', (accounts) => {
         await Property.new(0, [accounts[0], accounts[1], accounts[2]], "test", "test st.", "http://localhost", 0, 222)
         .then(instance => property = instance)
         .then(() => property.setPropertyToPendingState(deed.address));
-        await EscrowDeposit.new(deed.address).then(instance => escrow = instance);
+        await EscrowDeposit.new(deed.address, "USD").then(instance => escrow = instance);
         await Token.deployed().then((instance) => instance.mint(deed.address, 100));
     });
 
@@ -229,6 +229,27 @@ contract('ConfigurableDeed (Ukraine flow)', (accounts) => {
         //     let isSigned2 = await deed.isSignedBy(doc4, Users.Buyer.Public);
         //     assert(isSigned && isSigned2);
         // });
+    });
+
+    it("should add and remove step", async () => {
+        let currentFlow = await deed.getStepFlow();
+        let changedFlow;
+        await deed.insertStep(
+            utils.bufferToHex(utils.sha3(Flows.AdditionalFinal.Title + "unused").slice(0, 4)),
+            Flows.AdditionalFinal.counts,
+            0
+        ).then(() => {
+            return deed.getStepFlow();
+        }).then((newFlow) => {
+            assert.notDeepEqual(newFlow, currentFlow, "Flows are equals");
+            changedFlow = newFlow;
+        }).then(() => {
+            deed.removeStep(6);
+        }).then(() => {
+            return deed.getStepFlow();
+        }).then((newFlow) => {
+            assert.deepEqual(newFlow, currentFlow, "Flows are equals");
+        });
     });
 
     it("should add additional step before last", async () => {

@@ -78,6 +78,7 @@ contract DeedSimple is Owned, AddressChecker {
     uint256 private firstStep;
     uint256 private indexStep;
     uint256 private currentStep;
+    uint256 public stepCount;
 
     EscrowInterface public escrow;
     ControllerInterface public controller;
@@ -94,6 +95,7 @@ contract DeedSimple is Owned, AddressChecker {
     event StatusUpdate(DeedStatus status);
     event FeePaid(address payer, uint256 value);
     event StepCreated(bytes4 stepType, uint256 roles, uint8 flag, uint256 stepId);
+    event StepRemoved(bytes4 stepType, uint256 stepId);
     event StepDone(bytes4 stepType, uint256 stepId);
     event UserSet(address user, uint256 role, uint8 flag);
     event DocumentSaved(bytes32 documentHash, uint256 stepId);
@@ -133,9 +135,9 @@ contract DeedSimple is Owned, AddressChecker {
     }
 
     function getStepFlow() public view returns(uint256[]) {
-        uint256[] memory _flow = new uint256[](indexStep);
+        uint256[] memory _flow = new uint256[](stepCount);
         uint256 index = firstStep;
-        for(uint256 i = 0; i < indexStep; ++i) {
+        for(uint256 i = 0; i < stepCount; ++i) {
             _flow[i] = index;
             index = flow[index];
         }
@@ -188,6 +190,20 @@ contract DeedSimple is Owned, AddressChecker {
             requiredDocsCount: _docs,
             flag: 0
         }), stepId);
+    }
+
+    function removeStep(uint256 id) public onlyContractOwner {
+        require(!_checkBit(steps[id].flag, DONE_STEP), "Remove done step!");
+        uint256 prev = _findPrevious(id);
+        uint256 next = flow[id];
+        if (prev != 0) {
+            flow[prev] = next;
+        }
+        else if (id == firstStep) {
+            firstStep = next;
+        }
+        stepCount--;
+        emit StepRemoved(steps[id].stepType, id);
     }
 
     function reserve(
@@ -381,6 +397,7 @@ contract DeedSimple is Owned, AddressChecker {
         else if(id == firstStep) {
             firstStep = indexStep;
         }
+        stepCount++;
         emit StepCreated(step.stepType, 0, step.flag, indexStep);
     }
 
