@@ -540,4 +540,8 @@ contract Deed is Owned, AddressChecker {
         selfdestruct(msg.sender);
     }
 
+    function deedType() public pure returns(uint8) {
+        return 2;
+    }
+
 }
