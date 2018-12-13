@@ -68,6 +68,26 @@ contract NewProperty is Owned, AddressChecker {
     )
      public
     {
+        init(
+            _previousVersion,
+            _titleOwner,
+            _name,
+            _physicalAdress,
+            _url,
+            _areaType,
+            _area
+        );
+    }
+
+    function init(
+        address _previousVersion,
+        address[] _titleOwner,
+        string _name,
+        string _physicalAdress,
+        string _url,
+        uint _areaType,
+        uint256 _area
+    ) public onlyContractOwner onlyStatus(Status.OWNED) {
         previousVersion = _previousVersion;
         owners = _titleOwner;
         name = _name;
@@ -75,7 +95,6 @@ contract NewProperty is Owned, AddressChecker {
         url = _url;
         areaType = AreaType(_areaType);
         area = _area;
-        status = Status.OWNED;
     }
 
     function setUrl(string _url) public onlyTitleOwner returns(bool) {
