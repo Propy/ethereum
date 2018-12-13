@@ -4,7 +4,7 @@ import "./helpers/SafeMath.sol";
 import "./base/Owned.sol";
 
 
-contract FeeCalc is Owned {
+contract DocumentFeeCalc is Owned {
 
     using SafeMath for uint256;
 
