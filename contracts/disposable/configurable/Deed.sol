@@ -250,6 +250,9 @@ contract Deed is Owned, AddressChecker {
         else if (id == firstStep) {
             firstStep = next;
         }
+        if (currentStep == id) {
+            currentStep = next;
+        }
         stepCount--;
         emit StepRemoved(steps[id].stepType, id);
     }
@@ -494,6 +497,9 @@ contract Deed is Owned, AddressChecker {
         }
         else if(id == firstStep) {
             firstStep = indexStep;
+        }
+        if (currentStep == id) {
+            currentStep = indexStep;
         }
         stepCount++;
         emit StepCreated(step.stepType, step.roles, step.flag, indexStep);
