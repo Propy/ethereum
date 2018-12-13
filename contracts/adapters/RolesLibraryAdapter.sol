@@ -8,8 +8,11 @@ contract RolesLibraryInterface {
 contract RolesLibraryAdapter {
     RolesLibraryInterface rolesLibrary;
 
+    event Unauthorized(address user);
+
     modifier auth() {
         if (!_isAuthorized(msg.sender, msg.sig)) {
+            emit Unauthorized(msg.sender);
             return;
         }
         _;
