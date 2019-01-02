@@ -1,0 +1,30 @@
+{
+  "name": "ethereum",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "ethereumjs-wallet": "^0.6.3",
+    "web3": "^1.0.0-beta.37",
+    "web3-provider-engine": "^14.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Propy/ethereum.git"
+  },
+  "keywords": [],
+  "author": "MaximFischuk",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Propy/ethereum/issues"
+  },
+  "homepage": "https://github.com/Propy/ethereum#readme"
+}
