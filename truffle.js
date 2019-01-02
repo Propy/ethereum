@@ -3,7 +3,7 @@
 const Web3 = require("web3");
 const ProviderEngine = require("web3-provider-engine");
 const WalletSubprovider = require('web3-provider-engine/subproviders/wallet.js');
-const Web3Subprovider = require("web3-provider-engine/subproviders/web3.js");
+const Web3Subprovider = require("web3-provider-engine/subproviders/provider.js");
 const FilterSubprovider = require('web3-provider-engine/subproviders/filters.js');
 
 const ethereumjsWallet = require('ethereumjs-wallet');
