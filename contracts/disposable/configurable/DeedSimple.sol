@@ -119,7 +119,9 @@ contract DeedSimple is Owned, AddressChecker {
     }
 
     modifier onlyFinal() {
-        if (!_isFinalStep() || !_checkBit(steps[currentStep].flag, DONE_STEP)) {
+        if ((!_isFinalStep() || !_checkBit(steps[currentStep].flag, DONE_STEP)) &&
+                stepCount > 0
+        ) {
             emit Error("Not all steps are done!");
             return;
         }
@@ -436,6 +438,7 @@ contract DeedSimple is Owned, AddressChecker {
         return prev;
     }
 
+    // Remove function
     function kill()
      public
      onlyContractOwner

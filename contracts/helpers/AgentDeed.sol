@@ -1,17 +1,14 @@
 pragma solidity 0.4.24;
 
 import "../base/Owned.sol";
-import "../helpers/SafeMath.sol";
 
 contract DeedInterface {
-    function property() returns(address);
-    function seller() returns(address);
-    function buyer() returns(address);
-    function price() returns(uint256);
+    function price() public view returns(uint256);
+    function document() public view returns(address);
+    function property() public view returns(address);
 }
 
 contract ControllerInterface {
-    function feeCalc() public constant returns(address);
     function token() public constant returns(address);
     function usersRegistry() public constant returns(address);
 
@@ -45,40 +42,67 @@ contract UsersRegistryInterface {
     )
         public
     returns(bool);
+    function getUserRole(address) public constant returns(uint);
 }
 
-contract AgentDeedRegistrator is Owned {
+contract DocumentRegistryInterface {
+    function register(address) public;
+    function feeCalc() public constant returns(address);
+}
 
-    using SafeMath for uint256;
+contract AgentDeed is Owned {
 
-    DeedInterface public deed;
     ControllerInterface public controller;
-    FeeCalcInterface public feeCalc;
+    DocumentRegistryInterface public documentRegistry;
+    string public name;
 
-    function AgentDeedRegistrator(address _deed, address _controller, address _feeCalc) public {
-        deed = DeedInterface(_deed);
+    event Error(string msg);
+
+    modifier onlyRegisteredUser() {
+        uint256 code = 0;
+        address _sender = msg.sender;
+        assembly {
+            code := extcodesize(_sender)
+        }
+        if(code != 0) {
+            _sender = Owned(_sender).contractOwner(); // Proxy
+            _sender = Owned(_sender).contractOwner(); // Forwarder
+        }
+        if (
+            UsersRegistryInterface(controller.usersRegistry()).getUserRole(_sender) != 0 ||
+            UsersRegistryInterface(controller.usersRegistry()).getUserRole(msg.sender) != 0
+        ) {
+            _;
+        }
+        else {
+            emit Error("User does not registered");
+        }
+    }
+
+    constructor(address _controller, address _documentRegistry) public {
         controller = ControllerInterface(_controller);
-        feeCalc = FeeCalcInterface(_feeCalc);
+        documentRegistry = DocumentRegistryInterface(_documentRegistry);
     }
 
     function setController(address _controller) public onlyContractOwner {
         controller = ControllerInterface(_controller);
     }
 
-    function setDeed(address _deed) public onlyContractOwner {
-        deed = DeedInterface(_deed);
+    function setDocumentRegistry(address _documentRegistry) public onlyContractOwner {
+        documentRegistry = DocumentRegistryInterface(_documentRegistry);
     }
 
-    function doRegistration(bytes32 sellerfHash, bytes32 sellerlHash, bytes32 buyerfHash, bytes32 buyerlHash) public onlyContractOwner {
-        // Registration Users
-        UsersRegistryInterface(controller.usersRegistry()).create(deed.seller(), sellerfHash, sellerlHash, "", 128, deed.seller());
-        UsersRegistryInterface(controller.usersRegistry()).create(deed.buyer(), buyerfHash, buyerlHash, "", 128, deed.buyer());
+    function setName(string _name) public onlyContractOwner {
+        name = _name;
+    }
 
-        // Registration property
-        controller.registerProperty(deed.property());
+    function register(address _deed) public onlyRegisteredUser {
+        DeedInterface deed = DeedInterface(_deed);
+        FeeCalcInterface feeCalc = FeeCalcInterface(documentRegistry.feeCalc());
 
-        // Registration deed
         controller.registerDeed(address(deed));
+        controller.registerProperty(deed.property());
+        documentRegistry.register(deed.document());
 
         // Transfer fee to company wallet
         address companyWallet = controller.companyWallet();

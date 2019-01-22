@@ -142,7 +142,9 @@ contract Deed is Owned, AddressChecker {
     }
 
     modifier onlyFinal() {
-        if (!_isFinalStep() || !_checkBit(steps[currentStep].flag, DONE_STEP)) {
+        if ((!_isFinalStep() || !_checkBit(steps[currentStep].flag, DONE_STEP)) &&
+                stepCount > 0
+        ) {
             emit Error("Not all steps are done!");
             return;
         }
