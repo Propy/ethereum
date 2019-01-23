@@ -1,17 +1,19 @@
 const BaseDocument = artifacts.require("BaseDocument");
-const FeeCalc = artifacts.require("FeeCalc");
+const GrantDeedDocument = artifacts.require("GrantDeedDocument");
+const FeeCalc = artifacts.require("DocumentFeeCalc");
 
 const Fees = {
     Mainnet: (6 * Math.pow(10, 8)),
+    Stage_Mainnet: (100),
     Rinkeby: (100),
     Test: 10
-}
+};
 
 module.exports = (deployer, network) => {
     let fee;
     switch(network) {
         case "mainnet":
-            fee = Fees.Mainnet;
+            fee = Fees.Stage_Mainnet;
             break;
         case "rinkeby":
             fee = Fees.Rinkeby;
@@ -20,9 +22,11 @@ module.exports = (deployer, network) => {
             fee = Fees.Test;
     }
     deployer.deploy(BaseDocument, "")
+        .then(() => deployer.deploy(GrantDeedDocument, "", ""))
         .then(() => deployer.deploy(FeeCalc, fee))
         .then(() => {
             console.log("BaseDocument: " + BaseDocument.address);
+            console.log("GrantDeedDocument: " + GrantDeedDocument.address);
             console.log("FeeCalc: " + FeeCalc.address);
         });
-}
+};
