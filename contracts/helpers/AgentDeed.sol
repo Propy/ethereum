@@ -20,9 +20,9 @@ contract ControllerInterface {
 }
 
 contract FeeCalcInterface {
-    function getFee(uint256) public constant returns(uint256);
-    function getCompanyFee(uint256) public constant returns(uint256);
-    function getNetworkGrowthFee(uint256) public constant returns(uint256);
+    function getFee() public constant returns(uint256);
+    function getCompanyFee() public constant returns(uint256);
+    function getNetworkGrowthFee() public constant returns(uint256);
 }
 
 contract ERC20Interface {
@@ -107,13 +107,13 @@ contract AgentDeed is Owned {
         // Transfer fee to company wallet
         address companyWallet = controller.companyWallet();
         assert(companyWallet != address(0));
-        uint256 companyFee = feeCalc.getCompanyFee(deed.price());
+        uint256 companyFee = feeCalc.getCompanyFee();
         assert(ERC20Interface(controller.token()).transfer(companyWallet, companyFee));
 
         // Transfer fee to network wallet
         address networkGrowthPoolWallet = controller.networkGrowthPoolWallet();
         assert(networkGrowthPoolWallet != address(0));
-        uint256 networkGrowthFee = feeCalc.getNetworkGrowthFee(deed.price());
+        uint256 networkGrowthFee = feeCalc.getNetworkGrowthFee();
         assert(ERC20Interface(controller.token()).transfer(networkGrowthPoolWallet, networkGrowthFee));
     }
 
