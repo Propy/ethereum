@@ -177,7 +177,7 @@ contract Deed is Owned, AddressChecker {
     function getStepFlow() public view returns(uint256[]) {
         uint256[] memory _flow = new uint256[](stepCount);
         uint256 index = firstStep;
-        for(uint256 i = 0; i < indexStep; ++i) {
+        for(uint256 i = 0; i < stepCount; ++i) {
             _flow[i] = index;
             index = flow[index];
         }

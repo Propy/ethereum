@@ -237,6 +237,8 @@ contract('ConfigurableDeed (Ukraine flow)', (accounts) => {
         await deed.insertStep(
             utils.bufferToHex(utils.sha3(Flows.AdditionalFinal.Title + "unused").slice(0, 4)),
             Flows.AdditionalFinal.counts,
+            0,
+            '0x' + Flows.AdditionalFinal.Flag.toString(16),
             0
         ).then(() => {
             return deed.getStepFlow();
@@ -244,7 +246,7 @@ contract('ConfigurableDeed (Ukraine flow)', (accounts) => {
             assert.notDeepEqual(newFlow, currentFlow, "Flows are equals");
             changedFlow = newFlow;
         }).then(() => {
-            deed.removeStep(6);
+            deed.removeStep(5);
         }).then(() => {
             return deed.getStepFlow();
         }).then((newFlow) => {
