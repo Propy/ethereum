@@ -109,8 +109,8 @@ module.exports = (deployer, network) => {
         .then(() => agent.setName("PropyTitleDeedAgent"))
         .then(() => agent.forceChangeContractOwnership(MultiSigWalletInterface.address))
         .then(() => {
-            console.log("DocumentRegistry(Proxy): " + registry.address);
-            console.log("AgentDeed(Proxy): " + agent.address);
+            console.log(registry.address + ": DocumentRegistry(Proxy)");
+            console.log(agent.address+ ": AgentDeed(Proxy)");
             // throw("Deploying correctly interrupted");
         })
 };

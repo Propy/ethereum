@@ -84,7 +84,7 @@ module.exports = (deployer, network, accounts) => {
         .then(() => MultiSigWalletInterface.at(contracts.MultiSigWallet))
         .then(() => deployer.deploy(AgentDeed, "0x0", "0x0"))
         .then(() => {
-            console.log("DocumentRegistry: " + DocumentRegistry.address);
-            console.log("AgentDeed: " + AgentDeed.address);
+            console.log(DocumentRegistry.address + ": DocumentRegistry");
+            console.log(AgentDeed.address + ": AgentDeed");
         });
 };
