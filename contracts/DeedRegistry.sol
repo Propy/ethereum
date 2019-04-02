@@ -21,7 +21,7 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
 
     /// CONSTRUCTOR ///
 
-    function DeedRegistry(
+    constructor(
         Storage _store,
         bytes32 _crate,
         address _controller,
@@ -37,7 +37,7 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) auth returns(bool) {
+    function setupEventsHistory(address _eventsHistory) auth public returns(bool) {
         if (getEventsHistory() != 0x0) {
             return false;
         }
@@ -48,6 +48,7 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
     function setController(address _controller)
         auth
         notNull(_controller)
+        public 
     returns(bool) {
         if (controller == _controller) {
             _emitError("Attempt to change to the same value");

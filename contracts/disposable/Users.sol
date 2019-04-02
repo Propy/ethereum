@@ -24,18 +24,18 @@ contract Users is Owned {
     if (contractOwner == msg.sender || propyContractAddress == msg.sender) _;
   }
 
-  function setPropy(address propy) onlyContractOwner() {
+  function setPropy(address propy) onlyContractOwner() public {
     propyContractAddress=propy;
   }
 
   // Create & Update user
-  function set(address _addr, string _firstname, string _lastname,string _details, uint _role, address _wallet) allowedWriters() returns (bool success) {
+  function set(address _addr, string _firstname, string _lastname,string _details, uint _role, address _wallet) allowedWriters() public returns (bool success) {
     users[_addr] = User(_firstname, _lastname,_details, Role(_role), _wallet);
     return true;
   }
 
   // Get user
-  function get() constant returns (string, string, Role, address) {
+  function get() constant public returns (string, string, Role, address) {
     require (users[msg.sender].role != Role.none);
     return (
       users[msg.sender].firstname,
@@ -45,7 +45,7 @@ contract Users is Owned {
     );
   }
 
-  function getOther(address _addr) constant returns (string, string, Role, address) {
+  function getOther(address _addr) constant public returns (string, string, Role, address) {
     require (users[_addr].role != Role.none);
     return (
       users[_addr].firstname,
@@ -55,14 +55,14 @@ contract Users is Owned {
     );
   }
 
-  function getWallet(address _addr) constant returns (address) {
+  function getWallet(address _addr) constant public returns (address) {
     require (users[_addr].role != Role.none);
     return (
       users[_addr].wallet
     );
   }
 
-  function getRole(address _addr) constant returns (Role) {
+  function getRole(address _addr) constant public returns (Role) {
     require (users[_addr].role != Role.none);
     return (
       users[_addr].role
@@ -70,21 +70,21 @@ contract Users is Owned {
   }
 
   // Revome user
-  function remove(address _addr) allowedWriters() {
+  function remove(address _addr) allowedWriters() public {
     delete users[_addr];
   }
 
   // ---------------------------------------------------------------------------
   // Kill contract
-  function kill() onlyContractOwner() {
+  function kill() onlyContractOwner() public {
    if (msg.sender == contractOwner){
-      suicide(contractOwner);
+      selfdestruct(contractOwner);
     }
   }
 
   // ---------------------------------------------------------------------------
   // This unnamed function is called whenever someone tries to send ether to it
-  function () {
+  function () public {
     revert();     // Prevents accidental sending of ether
   }
 }

@@ -27,13 +27,13 @@ contract PropertyWrapper is Owned, AddressChecker {
     address public currentDeed;
     uint8 public areaType;
 
-    function status() public constant returns(uint8) {
+    function status() public pure returns(uint8) {
         return 1;
     }
-    function previousVersion() public constant returns(address) {
+    function previousVersion() public pure returns(address) {
         return address(0);
     }
-    function newVersion() public constant returns(address) {
+    function newVersion() public pure returns(address) {
         return address(0);
     }
 
@@ -67,11 +67,11 @@ contract PropertyWrapper is Owned, AddressChecker {
         return titleOwner;
     }
 
-    function getPreviousVersion() public constant returns(address) {
+    function getPreviousVersion() public pure returns(address) {
         return previousVersion();
     }
 
-    function getNewVersion() public constant returns(address) {
+    function getNewVersion() public pure returns(address) {
         return newVersion();
     }
 

@@ -23,12 +23,12 @@ contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryA
 
     /// CONSTRUCTOR ///
 
-    function PropertyRegistry(
+    constructor(
         Storage _store,
         bytes32 _crate,
         address _controller,
         address _rolesLibrary
-    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
+    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) public  {
         assert(_controller != address(0));
         controller = _controller;
 
@@ -39,7 +39,7 @@ contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryA
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) auth returns(bool) {
+    function setupEventsHistory(address _eventsHistory) auth public returns(bool) {
       if (getEventsHistory() != 0x0) {
           return false;
       }
@@ -107,15 +107,15 @@ contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryA
         return store.get(propertyExists, _property);
     }
 
-    function obsolete(address _property) constant returns(bool) {
+    function obsolete(address _property) constant public returns(bool) {
         return store.includes(obsoleteContracts, _property);
     }
 
-    function includes(address _property) constant returns(bool) {
+    function includes(address _property) constant public returns(bool) {
         return store.includes(relevantContracts, _property);
     }
 
-    function count() constant returns(uint256) {
+    function count() constant public returns(uint256) {
         return store.count(relevantContracts);
     }
 
@@ -137,12 +137,12 @@ contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryA
         PropertyRegistry(getEventsHistory()).emitPropertyRemoved(_property);
     }
 
-    function emitPropertyRegistered(address _property) {
-        PropertyRegistered(_self(), _property);
+    function emitPropertyRegistered(address _property) public {
+        emit PropertyRegistered(_self(), _property);
     }
 
-    function emitPropertyRemoved(address _property) {
-        PropertyRemoved(_self(), _property);
+    function emitPropertyRemoved(address _property) public {
+        emit PropertyRemoved(_self(), _property);
     }
 
 

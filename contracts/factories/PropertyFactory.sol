@@ -18,8 +18,9 @@ contract PropertyFactory is RolesLibraryAdapter, AddressChecker, MultiEventsHist
 
     /// CONSTRUCTOR ///
 
-    function PropertyFactory(address _controller, address _proxy, address _rolesLibrary)
+    constructor(address _controller, address _proxy, address _rolesLibrary)
         RolesLibraryAdapter(_rolesLibrary)
+        public
     {
         assert(_controller != address(0) && _proxy != address(0));
         controller = _controller;
@@ -28,7 +29,7 @@ contract PropertyFactory is RolesLibraryAdapter, AddressChecker, MultiEventsHist
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) auth returns(bool) {
+    function setupEventsHistory(address _eventsHistory) auth public returns(bool) {
       if (getEventsHistory() != 0x0) {
         return false;
       }
@@ -39,6 +40,7 @@ contract PropertyFactory is RolesLibraryAdapter, AddressChecker, MultiEventsHist
     function setController(address _controller)
         auth
         notNull(_controller)
+        public
     returns(bool) {
         if (controller == _controller) {
             _emitError("Attempt to change to the same value");
@@ -52,6 +54,7 @@ contract PropertyFactory is RolesLibraryAdapter, AddressChecker, MultiEventsHist
     function setProxy(address _proxy)
         auth
         notNull(_proxy)
+        public
     returns(bool) {
         proxy = _proxy;
         return true;
@@ -79,8 +82,8 @@ contract PropertyFactory is RolesLibraryAdapter, AddressChecker, MultiEventsHist
         PropertyFactory(getEventsHistory()).emitPropertyCreated(_property);
     }
 
-    function emitPropertyCreated(address _property) {
-        PropertyCreated(_self(), _property);
+    function emitPropertyCreated(address _property) public {
+        emit PropertyCreated(_self(), _property);
     }
 
 

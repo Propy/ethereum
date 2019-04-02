@@ -157,7 +157,7 @@ contract Deed is Owned, AddressChecker {
      returns(address)
     {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        hash = keccak256(prefix, hash);
+        hash = keccak256(abi.encodePacked(prefix, hash));
         return ecrecover(hash, v, r, s);
     }
 

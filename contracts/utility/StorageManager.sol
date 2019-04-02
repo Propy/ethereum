@@ -18,13 +18,13 @@ contract StorageManager is Owned {
 
     function giveAccess(address _actor, bytes32 _role) public onlyContractOwner returns(bool) {
         approvedContracts[_actor][_role] = true;
-        AccessGiven(_actor, _role);
+        emit AccessGiven(_actor, _role);
         return true;
     }
 
     function blockAccess(address _actor, bytes32 _role) public onlyContractOwner returns(bool) {
         approvedContracts[_actor][_role] = false;
-        AccessBlocked(_actor, _role);
+        emit AccessBlocked(_actor, _role);
         return true;
     }
 

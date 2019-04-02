@@ -6,19 +6,21 @@ import "./adapters/RolesLibraryAdapter.sol";
 
 
 contract PropertyInterface {
-    function forceChangeContractOwnership(address) returns(bool);
-    function setPropertyToPendingState(address) returns(bool);
-    function migrate(address) returns(bool);
+    function forceChangeContractOwnership(address) public returns(bool);
+    function setPropertyToPendingState(address) public returns(bool);
+    function migrate(address) public returns(bool);
 }
 
 contract PropertyProxy is RolesLibraryAdapter, AddressChecker, MultiEventsHistoryAdapter {
 
     address public controller;
 
-    function PropertyProxy(
+    constructor(
         address _controller,
         address _rolesLibrary
-    ) RolesLibraryAdapter(_rolesLibrary) {
+    ) RolesLibraryAdapter(_rolesLibrary) 
+    public 
+    {
         assert(_controller != address(0) && _rolesLibrary != address(0));
         controller = _controller;
     }
@@ -36,6 +38,7 @@ contract PropertyProxy is RolesLibraryAdapter, AddressChecker, MultiEventsHistor
     function setController(address _controller)
         auth
         notNull(_controller)
+        public
     returns(bool) {
         if (controller == _controller) {
             _emitError("Attempt to change to the same value");

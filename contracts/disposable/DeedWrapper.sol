@@ -21,23 +21,23 @@ contract DeedWrapper is Owned {
 
     // PROPERTY //
 
-    function escrow() public constant returns(address) {
+    function escrow() public pure returns(address) {
         return address(0);
     }
-    function status() public constant returns(uint8) {
+    function status() public pure returns(uint8) {
         return 1;
     }
-    function moves(uint8) public constant returns(uint8) {
+    function moves(uint8) public pure returns(uint8) {
         return 1;
     }
-    function intermediaries(uint256) public constant returns(address) {
+    function intermediaries(uint256) public pure returns(address) {
         return address(0);
     }
-    function metaDeed() public constant returns(address) {
+    function metaDeed() public pure returns(address) {
         return address(0);
     }
 
-    function DeedWrapper(address _property, address _seller, address _buyer) public {
+    constructor(address _property, address _seller, address _buyer) public {
         property = _property;
         seller = _seller;
         buyer = _buyer;

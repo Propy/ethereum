@@ -9,7 +9,7 @@ contract BaseDeedFactory is Owned, BaseFactory {
     function deployContract(address _metaDeed) public onlyContractOwner returns(address) {
         address created;
         created = new BaseDeed(_metaDeed);
-        Contract(created);
+        emit Contract(created);
         return created;
     }
 }

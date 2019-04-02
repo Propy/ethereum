@@ -19,7 +19,7 @@ contract EscrowFactory is Owned, Aux, BaseFactory  {
         else {
             revert();
         }
-        Contract(created);
+        emit Contract(created);
         return created;
     }
 }

@@ -54,7 +54,7 @@ contract EscrowBase is Owned, AddressChecker {
 
     /// CONSTRUCTOR ///
 
-    function EscrowBase(address _metaDeed, address _deed) {
+    constructor(address _metaDeed, address _deed) public {
         require(
             _metaDeed != address(0) &&
             _deed != address(0)
@@ -73,11 +73,11 @@ contract EscrowBase is Owned, AddressChecker {
      */
     function init(uint256 _price, uint256[] _payments) public only(deed) returns(bool) {
         if (_price <= 0) {
-            Error("Price can not be zero.");
+            emit Error("Price can not be zero.");
             return false;
         }
         if (_payments.length != metaDeed.getPaymentMovesCount()) {
-            Error("Payment arrays do not match.");
+            emit Error("Payment arrays do not match.");
             return false;
         }
 
@@ -85,14 +85,14 @@ contract EscrowBase is Owned, AddressChecker {
         uint256 total;
         for (uint8 p = 0; p < _payments.length; p++) {
             if (_payments[p] <= 0) {
-                Error("Payment amount can not be zero.");
+                emit Error("Payment amount can not be zero.");
                 return false;
             }
             total += _payments[p];
         }
         // Ensure that `payments` include `price`.
         if (total < _price) {
-            Error("Sum of all payments can not be less than Property price.");
+            emit Error("Sum of all payments can not be less than Property price.");
             return false;
         }
 
@@ -107,17 +107,17 @@ contract EscrowBase is Owned, AddressChecker {
         }
 
         currentMoveIndex = 0;  // Explicit assignment, just in case.
-        Initiated(total);
+        emit Initiated(total);
         return true;
     }
 
     function reInit(uint256 _price, uint256[] _payments) public only(deed) returns(bool) {
         if (_price <= 0) {
-            Error("Price can not be zero.");
+            emit Error("Price can not be zero.");
             return false;
         }
         if (_payments.length != metaDeed.getPaymentMovesCount()) {
-            Error("Payment arrays do not match.");
+            emit Error("Payment arrays do not match.");
             return false;
         }
 
@@ -125,14 +125,14 @@ contract EscrowBase is Owned, AddressChecker {
         uint256 total;
         for (uint8 p = 0; p < _payments.length; p++) {
             if (_payments[p] <= 0) {
-                Error("Payment amount can not be zero.");
+                emit Error("Payment amount can not be zero.");
                 return false;
             }
             total += _payments[p];
         }
         // Ensure that `payments` include `price`.
         if (total < _price) {
-            Error("Sum of all payments can not be less than Property price.");
+            emit Error("Sum of all payments can not be less than Property price.");
             return false;
         }
 
@@ -146,7 +146,7 @@ contract EscrowBase is Owned, AddressChecker {
         }
 
         currentMoveIndex = 0;  // Explicit assignment, just in case.
-        Initiated(total);
+        emit Initiated(total);
         return true;
     }
 
@@ -175,7 +175,7 @@ contract EscrowBase is Owned, AddressChecker {
             _returnTo,
             false
         );
-        PaymentAssigned(_paymentMove, _unlockAt, _receiver, _returnTo, payments[_paymentMove]);
+        emit PaymentAssigned(_paymentMove, _unlockAt, _receiver, _returnTo, payments[_paymentMove]);
         return true;
     }
 
@@ -186,7 +186,7 @@ contract EscrowBase is Owned, AddressChecker {
         uint8 move = paymentMoves[currentMoveIndex];
         uint256 payment = payments[move];
         require(_value >= payment);
-        PaymentReceived(move, _sender, _value);
+        emit PaymentReceived(move, _sender, _value);
 
         uint8 MOVE_STATUS_SUCCESS = 1;
         _notifyDeed(move, MOVE_STATUS_SUCCESS);
@@ -204,13 +204,13 @@ contract EscrowBase is Owned, AddressChecker {
 
     function withdraw(uint8 _move) public returns(bool) {
         if (payments[_move] == 0) {
-            Error("No such payment.");
+            emit Error("No such payment.");
             return false;
         }
 
         Withdrawal storage withdrawal = withdrawals[_move];
         if (withdrawal.done) {
-            Error("Already withdrawn.");
+            emit Error("Already withdrawn.");
             return false;
         }
 
@@ -226,7 +226,7 @@ contract EscrowBase is Owned, AddressChecker {
 
         withdrawal.done = true;
         if (_withdraw(sendTo, payments[_move])) {
-            PaymentWithdrawn(_move, sendTo, payments[_move]);
+            emit PaymentWithdrawn(_move, sendTo, payments[_move]);
             return true;
         }
         revert();

@@ -21,7 +21,7 @@ contract MetaDeedUkraine is MetaDeed {
         NOTARY
     }
 
-    function MetaDeedUkraine(address _controller) MetaDeed(_controller) {
+    constructor(address _controller) MetaDeed(_controller) public {
         uint NOTARY_ROLE = 8;
         require(roleExists(_controller, NOTARY_ROLE));
 

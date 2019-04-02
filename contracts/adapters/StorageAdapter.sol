@@ -9,7 +9,7 @@ contract StorageAdapter {
 
     StorageInterface.Config store;
 
-    function StorageAdapter(Storage _store, bytes32 _crate) {
+    constructor(Storage _store, bytes32 _crate) public {
         assert(_crate != bytes32(0));
         store.init(_store, _crate);
     }

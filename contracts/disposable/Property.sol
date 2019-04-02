@@ -42,7 +42,7 @@ contract Property is Owned, AddressChecker {
     event Migrated(address to);
 
 
-    function Property(
+    constructor(
         address _previousVersion,
         address _titleOwner,
         string _name,
@@ -67,7 +67,7 @@ contract Property is Owned, AddressChecker {
     returns(bool) {
         status = Status.PENDING;
         currentDeed = _deed;
-        StatusChanged(address(this), uint8(status));
+        emit StatusChanged(address(this), uint8(status));
         return true;
     }
 
@@ -87,8 +87,8 @@ contract Property is Owned, AddressChecker {
         titleOwner = _newOwner;
         status = Status.OWNED;
         currentDeed = address(0);
-        OwnerChanged(address(this), _newOwner);
-        StatusChanged(address(this), uint8(status));
+        emit OwnerChanged(address(this), _newOwner);
+        emit StatusChanged(address(this), uint8(status));
         return true;
     }
 
@@ -101,7 +101,7 @@ contract Property is Owned, AddressChecker {
     returns(bool) {
         status = Status.OWNED;
         currentDeed = address(0);
-        StatusChanged(address(this), uint8(status));
+        emit StatusChanged(address(this), uint8(status));
     }
 
 
@@ -112,7 +112,7 @@ contract Property is Owned, AddressChecker {
         }
         newVersion = _to;
         status = Status.MIGRATED;
-        Migrated(_to);
+        emit Migrated(_to);
         return true;
     }
 
