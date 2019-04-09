@@ -87,14 +87,14 @@ module.exports = async (deployer, network, accounts) => {
             .then(() => PropertyController.deployed())
             .then(controller => deployer.deploy(MetaDeedUkraine, controller.address))
 
-            /*
+           
             .then(() => {
                 console.log('\nDeed related contracts:');
                 for (let contract of contracts) {
                     console.log(`${contract.address}: ${contract._json.contractName}`);
                 }
                 console.log();
-            })*/
+            })
 
 
             .then(() => true);

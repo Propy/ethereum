@@ -56,11 +56,11 @@ contract MetaDeed is Owned {
     event MoveAdded(uint8 move, string name, uint party, uint8 args, uint8 dependency, uint8 assignPaymentFor, uint8 unlockPaymentAt);
 
     // TODO: Don't forget to initiate this constructor in the child contract
-    function MetaDeed(address _controller) {
+    constructor(address _controller) {
         controller = _controller;
     }
 
-    function setController(address _controller)
+    function setController(address _controller) public
         onlyContractOwner
     returns(bool) {
         if (_controller == address(0) || controller == _controller) {

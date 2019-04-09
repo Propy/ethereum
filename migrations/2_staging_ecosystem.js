@@ -25,6 +25,7 @@ const MultiSigWallet = artifacts.require('./MultiSigWallet.sol');
 const allContracts = [
     DeedRegistry,
     TokenMock,
+    Mock,
     FeeCalc,
     PropertyController,
     PropertyFactory,
@@ -58,6 +59,7 @@ module.exports = async (deployer, network, accounts) => {
 
         let token;
         let feeCalc;
+        let mock;
 
         let propertyController;
         let propertyProxy;
@@ -105,6 +107,13 @@ module.exports = async (deployer, network, accounts) => {
             .then(() => TokenMock.deployed())
             .then(instance => {
                 token = instance;
+            })
+
+            // MOCK
+            .then(() => deployer.deploy(Mock))
+            .then(() => Mock.deployed())
+            .then(instance => {
+                mock = instance;
             })
 
             // FEE CALC

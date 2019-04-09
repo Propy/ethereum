@@ -27,7 +27,7 @@ contract MultiEventsHistoryAdapter {
         _;
     }
 
-    function getEventsHistory() constant returns(address) {
+    function getEventsHistory() constant public returns(address) {
         return eventsHistory;
     }
 
@@ -44,16 +44,16 @@ contract MultiEventsHistoryAdapter {
         MultiEventsHistoryAdapter(getEventsHistory()).emitError(_msg);
     }
 
-    function emitError(string _msg) {
-        Error(_self(), _msg);
+    function emitError(string _msg) public {
+        emit Error(_self(), _msg);
     }
 
     function _emitServiceChanged(string _name, address _oldAddress, address _newAddress) internal {
         MultiEventsHistoryAdapter(getEventsHistory()).emitServiceChanged(_name, _oldAddress, _newAddress);
     }
 
-    function emitServiceChanged(string _name, address _oldAddress, address _newAddress) {
-        ServiceChanged(_self(), _name, _oldAddress, _newAddress);
+    function emitServiceChanged(string _name, address _oldAddress, address _newAddress) public {
+        emit ServiceChanged(_self(), _name, _oldAddress, _newAddress);
     }
 
 }

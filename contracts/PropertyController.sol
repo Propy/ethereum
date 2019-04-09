@@ -12,44 +12,44 @@ contract PropertyFactoryInterface {
 
 
 contract PropertyRegistryInterface {
-    function register(address) returns(bool);
-    function relevant(address) returns(bool);
-    function remove(address, bool) returns(bool);
+    function register(address) public returns(bool);
+    function relevant(address) public returns(bool);
+    function remove(address, bool) public returns(bool);
 }
 
 
 contract DeedRegistryInterface {
-    function register(address) returns(bool);
-    function remove(address) returns(bool);
+    function register(address) public returns(bool);
+    function remove(address) public returns(bool);
 }
 
 
 contract PropertyProxyInterface {
-    function setPropertyToPendingState(address, address) returns(bool);
-    function migrateProperty(address, address) returns(bool);
+    function setPropertyToPendingState(address, address) public returns(bool);
+    function migrateProperty(address, address) public returns(bool);
 }
 
 
 contract PropertyInterface {
-    function status() returns(uint);
-    function getTitleOwner() returns(address);
+    function status() public returns(uint);
+    function getTitleOwner() public returns(address);
 }
 
 
 contract DeedInterface {
-    function reserve(address, uint256, address, address, address, address[], uint256[]) returns(bool);
-    function approve() returns(bool);
-    function changeIntermediary(uint, address) returns(bool);
-    function metaDeed() returns(address);
-    function property() returns(address);
-    function seller() returns(address);
-    function buyer() returns(address);
-    function escrow() returns(address);
+    function reserve(address, uint256, address, address, address, address[], uint256[]) public returns(bool);
+    function approve() public returns(bool);
+    function changeIntermediary(uint, address) public returns(bool);
+    function metaDeed() public returns(address);
+    function property() public returns(address);
+    function seller() public returns(address);
+    function buyer() public returns(address);
+    function escrow() public returns(address);
 }
 
 
 contract UsersRegistryInterface {
-    function getRole(address) returns(uint);
+    function getRole(address) public returns(uint);
 }
 
 
@@ -73,7 +73,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
 
     /// CONSTRUCTOR ///
 
-    function PropertyController(
+    constructor(
         address _rolesLibrary,
         address _propertyProxy,
         address _propertyFactory,
@@ -106,6 +106,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setPropertyProxy(address _propertyProxy)
         auth
         notNull(_propertyProxy)
+        public 
     returns(bool) {
         _emitServiceChanged("PropertyProxy", propertyProxy, _propertyProxy);
         propertyProxy = _propertyProxy;
@@ -124,6 +125,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setPropertyRegistry(address _propertyRegistry)
         auth
         notNull(_propertyRegistry)
+        public 
     returns(bool) {
         _emitServiceChanged("PropertyRegistry", propertyRegistry, _propertyRegistry);
         propertyRegistry = _propertyRegistry;
@@ -133,6 +135,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setDeedRegistry(address _deedRegistry)
         auth
         notNull(_deedRegistry)
+        public 
     returns(bool) {
         _emitServiceChanged("DeedRegistry", deedRegistry, _deedRegistry);
         deedRegistry = _deedRegistry;
@@ -151,6 +154,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setToken(address _token)
         auth
         notNull(_token)
+        public 
     returns(bool) {
         _emitServiceChanged("Token", token, _token);
         token = _token;
@@ -160,6 +164,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setFeeCalc(address _feeCalc)
         auth
         notNull(_feeCalc)
+        public 
     returns(bool) {
         _emitServiceChanged("FeeCalc", feeCalc, _feeCalc);
         feeCalc = _feeCalc;
@@ -171,6 +176,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
         address _networkGrowthPoolWallet
     )
         auth
+        public 
     returns(bool) {
         require(_companyWallet != address(0) && _networkGrowthPoolWallet != address(0));
         companyWallet = _companyWallet;
@@ -343,8 +349,8 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     }
 
 
-    function emitDeedReserved(address _deed, address _property, address _seller, address _buyer, address _escrow) {
-        DeedReserved(_self(), _deed, _property, _seller, _buyer, _escrow);
+    function emitDeedReserved(address _deed, address _property, address _seller, address _buyer, address _escrow) public {
+        emit DeedReserved(_self(), _deed, _property, _seller, _buyer, _escrow);
     }
 
     /// RESTRICTIONS & DISASTER RECOVERY ///

@@ -27,7 +27,7 @@ contract MetaDeedCalifornia2 is MetaDeed {
         TITLE_COMPANY_AGENT
     }
 
-    function MetaDeedCalifornia2(address _controller) MetaDeed(_controller) {
+    constructor(address _controller) MetaDeed(_controller) public {
         // Following roles must exist at UsersRegistry
         uint BROKER_ROLE = 4;
         require(roleExists(_controller, BROKER_ROLE));

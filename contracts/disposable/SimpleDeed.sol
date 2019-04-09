@@ -14,13 +14,14 @@ contract SimpleDeed is Owned {
         uint8 move, uint party, address who, bytes32 key, bytes32 value
     );
 
-    function SimpleDeed(
+    constructor(
         address _property,
         uint256 _price,
         address _seller,
         address _buyer,
         bytes32[] _keys,
         bytes32[] _values)
+        public
     {
         require(
             _property != 0 &&
@@ -37,7 +38,7 @@ contract SimpleDeed is Owned {
         for (uint8 i = 0; i < _keys.length; i++) {
             require(data[1][_keys[i]] == bytes32(0));
             data[1][_keys[i]] = _values[i];
-            DataProvided(1, 0, 0, _keys[i], _values[i]);
+            emit DataProvided(1, 0, 0, _keys[i], _values[i]);
         }
     }
 }

@@ -18,11 +18,11 @@ contract RolesLibraryAdapter {
         _;
     }
 
-    function RolesLibraryAdapter(address _rolesLibrary) {
+    constructor(address _rolesLibrary) public {
         rolesLibrary = RolesLibraryInterface(_rolesLibrary);
     }
 
-    function setRolesLibrary(RolesLibraryInterface _rolesLibrary) auth() returns(bool) {
+    function setRolesLibrary(RolesLibraryInterface _rolesLibrary) auth() public returns(bool) {
         rolesLibrary = _rolesLibrary;
         return true;
     }

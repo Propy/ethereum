@@ -103,7 +103,7 @@ contract BaseDeed is Owned, AddressChecker {
 
     modifier onlyStatus(Status _status) {
         if (_status != status) {
-            Error("Another contract status required.");
+            emit Error("Another contract status required.");
             return;
         }
         _;
@@ -111,7 +111,7 @@ contract BaseDeed is Owned, AddressChecker {
 
     modifier onlyNotStatus(Status _status) {
         if (_status == status) {
-            Error("Any other contract status required.");
+            emit Error("Any other contract status required.");
             return;
         }
         _;
@@ -143,7 +143,7 @@ contract BaseDeed is Owned, AddressChecker {
 
     /// CONSTRUCTOR ///
 
-    function BaseDeed(address _metaDeed) {
+    constructor(address _metaDeed) {
         metaDeed = MetaDeedInterface(_metaDeed);
     }
 
@@ -154,6 +154,7 @@ contract BaseDeed is Owned, AddressChecker {
     function setMetaDeed(address _metaDeed)
         onlyContractOwner
         notNull(_metaDeed)
+        public
     returns(bool) {
         ServiceChanged("MetaDeed", metaDeed, _metaDeed);
         metaDeed = MetaDeedInterface(_metaDeed);
@@ -213,15 +214,15 @@ contract BaseDeed is Owned, AddressChecker {
         // Designate parties for main parties
         parties[_seller] = 1;
         actors[1] = _seller;
-        PartyDesignated(1, _seller);
+        emit PartyDesignated(1, _seller);
 
         parties[_buyer] = 2;
         actors[2] = _buyer;
-        PartyDesignated(2, _buyer);
+        emit PartyDesignated(2, _buyer);
 
         parties[_escrow] = 3;
         actors[3] = _escrow;
-        PartyDesignated(3, _escrow);
+        emit PartyDesignated(3, _escrow);
 
         // Designate intermediaries
         uint party;
@@ -237,13 +238,13 @@ contract BaseDeed is Owned, AddressChecker {
 
             parties[_intermediaries[i]] = party;
             actors[party] = _intermediaries[i];
-            PartyDesignated(party, _intermediaries[i]);
+            emit PartyDesignated(party, _intermediaries[i]);
         }
 
         // Basically checks if call is successful
         require(_reserveCallback(_property, _price, _seller, _buyer, _escrow, _intermediaries, _payments));
         status = Status.RESERVED;
-        StatusUpdate(Status.RESERVED);
+        emit StatusUpdate(Status.RESERVED);
         return true;
     }
 
@@ -300,19 +301,19 @@ contract BaseDeed is Owned, AddressChecker {
         onlyStatus(Status.RESERVED)
     returns(bool) {
         if (_move <= 0) {
-            Error("Wrong Move number.");
+            emit Error("Wrong Move number.");
             return false;
         }
 
         // It should actually throw an exception if _status > 2, but let it be, just in case.
         if (_status != MoveStatus.SUCCESS && _status != MoveStatus.FAILED) {
-            Error("Wrong Move status.");
+            emit Error("Wrong Move status.");
             return false;
         }
 
         // Move must not be finished
         if (moves[_move] != MoveStatus.NOT_SET) {
-            Error("Move is already done.");
+            emit Error("Move is already done.");
             return false;
         }
 
@@ -320,17 +321,17 @@ contract BaseDeed is Owned, AddressChecker {
 
         if (move.dependency > 0) {
             if (moves[move.dependency] == MoveStatus.NOT_SET) {
-                Error("Dependency move is not done yet.");
+                emit Error("Dependency move is not done yet.");
                 return false;
             } else if (moves[move.dependency] == MoveStatus.FAILED) {
-                Error("Dependency move failed");
+                emit Error("Dependency move failed");
                 return false;
             }
         }
 
         // Sender must be the required party
         if (msg.sender != actors[move.party]) {
-            Error("Sender is not the required party.");
+            emit Error("Sender is not the required party.");
             return false;
         }
 
@@ -338,7 +339,7 @@ contract BaseDeed is Owned, AddressChecker {
         // Skip seller, buyer and escrow party checks (Maybe check for at least presence in the user registry?)
         if (move.role > 0) {
             if (!_checkRole(msg.sender, move.role)) {
-                Error("Sender has no required role.");
+                emit Error("Sender has no required role.");
                 return false;
             }
         }
@@ -363,7 +364,7 @@ contract BaseDeed is Owned, AddressChecker {
         }
 
         moves[_move] = _status;
-        MoveDone(_move, uint8(_status));
+        emit MoveDone(_move, uint8(_status));
         return true;
     }
 
@@ -377,7 +378,7 @@ contract BaseDeed is Owned, AddressChecker {
             _price == 0 ||
             _payments.length == 0
         ) {
-            Error("Some of arguments are invalid.");
+            emit Error("Some of arguments are invalid.");
             return false;
         }
         if (!EscrowInterface(escrow).reInit(_price, _payments)) {
@@ -386,7 +387,7 @@ contract BaseDeed is Owned, AddressChecker {
         }
         uint256 oldPrice = price;
         price = _price;
-        PropertyPriceChanged(oldPrice, price);
+        emit PropertyPriceChanged(oldPrice, price);
         return true;
     }
 
@@ -407,16 +408,16 @@ contract BaseDeed is Owned, AddressChecker {
         if (move.args > 0) {
             // Data length must be correct
             if (_keys.length != _values.length) {
-                Error("Provided data arrays are of different length.");
-                DebugUint(_keys.length);
-                DebugUint(_values.length);
+                emit Error("Provided data arrays are of different length.");
+                emit DebugUint(_keys.length);
+                emit DebugUint(_values.length);
                 return false;
             }
             // Provided arguments number must be at least `move.args` big.
             if (_keys.length < move.args) {
-                Error("Provided number of arguments is less than required.");
-                DebugUint(_keys.length);
-                DebugUint(move.args);
+                emit Error("Provided number of arguments is less than required.");
+                emit DebugUint(_keys.length);
+                emit DebugUint(move.args);
                 return false;
             }
             for (uint8 d = 0; d < _keys.length; d++) {
@@ -430,8 +431,8 @@ contract BaseDeed is Owned, AddressChecker {
             return true;
         } else {
             if (_keys.length != 0) {
-                Error("There should be no arguments provided.");
-                DebugUint(_keys.length);
+                emit Error("There should be no arguments provided.");
+                emit DebugUint(_keys.length);
                 return false;
             }
             return true;
@@ -476,7 +477,7 @@ contract BaseDeed is Owned, AddressChecker {
         _payFee(_move);
         PropertyInterface Property = PropertyInterface(property);
         Property.approveOwnershipTransfer(buyer);
-        OwnershipTransfer(_move, true);
+        emit OwnershipTransfer(_move, true);
     }
 
     /**
@@ -499,7 +500,7 @@ contract BaseDeed is Owned, AddressChecker {
         uint256 networkGrowthFee = FeeContract.getNetworkGrowthFee(price);
         assert(token.transfer(networkGrowthPoolWallet, networkGrowthFee));
 
-        FeePaid(_move, buyer, companyFee + networkGrowthFee);
+        emit FeePaid(_move, buyer, companyFee + networkGrowthFee);
 
         // Return change back to buyer
         uint256 excessFee = token.balanceOf(address(this));
@@ -515,7 +516,7 @@ contract BaseDeed is Owned, AddressChecker {
         //_releaseFee(_move);
         PropertyInterface Property = PropertyInterface(property);
         assert(Property.rejectOwnershipTransfer());
-        OwnershipTransfer(_move, false);
+        emit OwnershipTransfer(_move, false);
     }
 
     /// GETTERS ///

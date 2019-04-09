@@ -10,7 +10,7 @@ contract EscrowOracle is EscrowBase {
 
     event Deposit(uint256 payment, uint256 sum);
 
-    function EscrowOracle(address _metaDeed, address _deed, address _oracle) EscrowBase(_metaDeed, _deed) {
+    constructor(address _metaDeed, address _deed, address _oracle) EscrowBase(_metaDeed, _deed) public {
         oracle = _oracle;
     }
 
@@ -21,7 +21,7 @@ contract EscrowOracle is EscrowBase {
 
     function deposit(uint _payment) only(oracle) public {
         depositAmount = depositAmount + _payment;
-        Deposit(_payment, depositAmount);
+        emit Deposit(_payment, depositAmount);
         if (depositAmount > deed.price()) {
             _checkPayment(msg.sender, depositAmount);
         }

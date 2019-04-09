@@ -41,12 +41,12 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
 
     /// CONSTRUCTOR ///
 
-    function UsersRegistry(
+    constructor(
         Storage _store,
         bytes32 _crate,
         address _controller,
         address _rolesLibrary
-    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
+    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) public {
         assert(_controller != address(0));
         controller = _controller;
 
@@ -62,7 +62,7 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
 
     /// SETTINGS ///
 
-    function setupEventsHistory(address _eventsHistory) auth returns(bool) {
+    function setupEventsHistory(address _eventsHistory) auth public returns(bool) {
         if (getEventsHistory() != 0x0) {
             return false;
         }
@@ -73,6 +73,7 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
     function setController(address _controller)
         auth
         notNull(_controller)
+        public
     returns(bool) {
         if (controller == _controller) {
             _emitError("Attempt to change to the same value");
@@ -224,16 +225,16 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
         UsersRegistry(getEventsHistory()).emitUserRemoved(_user);
     }
 
-    function _emitUserRoleSet(uint _role) {
+    function _emitUserRoleSet(uint _role) public {
         UsersRegistry(getEventsHistory()).emitUserRoleSet(_role);
     }
 
-    function emitRoleDefined(uint _role) {
-        RoleDefined(_self(), _role);
+    function emitRoleDefined(uint _role) public {
+        emit RoleDefined(_self(), _role);
     }
 
-    function emitRoleRemoved(uint _role) {
-        RoleRemoved(_self(), _role);
+    function emitRoleRemoved(uint _role) public {
+        emit RoleRemoved(_self(), _role);
     }
 
     function emitUserSet(
@@ -243,8 +244,8 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
         bytes32 _details,
         uint _role,
         address _wallet
-    ) {
-        UserSet(
+    ) public {
+        emit UserSet(
             _self(),
             _user,
             _firstname,
@@ -254,18 +255,18 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
             _wallet);
     }
 
-    function emitUserRemoved(address _user) {
-        UserRemoved(_self(), _user);
+    function emitUserRemoved(address _user) public {
+        emit UserRemoved(_self(), _user);
     }
 
-    function emitUserRoleSet(uint _role) {
-        UserRoleSet(_self(), _role);
+    function emitUserRoleSet(uint _role) public {
+        emit UserRoleSet(_self(), _role);
     }
 
 
     /// RESTRICTIONS & DISASTER RECOVERY ///
 
-    function kill() auth {
+    function kill() auth public {
         selfdestruct(msg.sender);
     }
 

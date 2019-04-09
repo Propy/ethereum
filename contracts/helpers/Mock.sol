@@ -32,7 +32,7 @@ contract Mock {
     mapping (bytes4 => bytes32) public ignores;  // Function signature => ignored?
 
     // Fallback function catches all of the calls
-    function () payable {
+    function () payable public {
         // Check if we are ignoring this function signature
         if (ignores[msg.sig] != bytes32(0)) {
             // Use assembly for return, since the fallback function can not use `return` statement
@@ -43,9 +43,9 @@ contract Mock {
             }
         }
         callsCount++;
-        bytes32 callHash = keccak256(msg.sender, msg.value, msg.data);
+        bytes32 callHash = keccak256(abi.encodePacked(msg.sender, msg.value, msg.data));
         if (expectations[nextExpectation].callHash != callHash) {
-            UnexpectedCall(nextExpectation, msg.sender, msg.value, msg.data, callHash);
+            emit UnexpectedCall(nextExpectation, msg.sender, msg.value, msg.data, callHash);
             return;
         }
         bytes32 result = expectations[nextExpectation++].callReturn;
@@ -58,7 +58,7 @@ contract Mock {
         }
     }
 
-    function forwardCall(address _to, bytes _data) returns(bytes32 result) {
+    function forwardCall(address _to, bytes _data) public returns(bytes32 result) {
         uint value = msg.value;
         bool success;
         assembly {
@@ -78,27 +78,27 @@ contract Mock {
     /**
      * Enable or disable the ignore of the given function signature.
      */
-    function ignore(bytes4 _sig, bytes32 _return) {
+    function ignore(bytes4 _sig, bytes32 _return) public {
         ignores[_sig] = _return;
     }
 
-    function expect(address _from, uint _value, bytes _input, bytes32 _return) {
-        expectations[++expectationsCount] = Expect(keccak256(_from, _value, _input), _return);
+    function expect(address _from, uint _value, bytes _input, bytes32 _return) public {
+        expectations[++expectationsCount] = Expect(keccak256(abi.encodePacked(_from, _value, _input)), _return);
     }
 
-    function popExpectation() {
+    function popExpectation() public {
         expectations[expectationsCount--] = Expect(bytes32(0), bytes32(0));
     }
 
-    function assertExpectations() constant {
+    function assertExpectations() constant public {
         assert(expectationsLeft() == 0 && callsCount == expectationsCount);
     }
 
-    function expectationsLeft() constant returns(uint) {
+    function expectationsLeft() constant public returns(uint) {
         return expectationsCount - (nextExpectation - 1);
     }
 
-    function resetCallsCount() returns(bool) {
+    function resetCallsCount() public returns(bool) {
         callsCount = 0;
     }
 }

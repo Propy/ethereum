@@ -21,7 +21,7 @@ contract OldProperty is Owned {
 
   // ---------------------------------------------------------------------------
   // Get ownerId
-  function getowner() constant returns (address) {
+  function getowner() constant public returns (address) {
     return titleOwnerId;
   }
 

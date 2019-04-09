@@ -157,7 +157,7 @@ contract Deed is Owned, AddressChecker {
      returns(address)
     {
         bytes memory prefix = "\x19Ethereum Signed Message:\n32";
-        hash = keccak256(prefix, hash);
+        hash = keccak256(abi.encodePacked(prefix, hash));
         return ecrecover(hash, v, r, s);
     }
 
@@ -177,7 +177,7 @@ contract Deed is Owned, AddressChecker {
     function getStepFlow() public view returns(uint256[]) {
         uint256[] memory _flow = new uint256[](stepCount);
         uint256 index = firstStep;
-        for(uint256 i = 0; i < indexStep; ++i) {
+        for(uint256 i = 0; i < stepCount; ++i) {
             _flow[i] = index;
             index = flow[index];
         }

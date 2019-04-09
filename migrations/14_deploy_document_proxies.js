@@ -1,6 +1,7 @@
 const Proxy = artifacts.require("UpdatableProxy");
 const DocumentRegistry = artifacts.require("DocumentRegistry");
 const DocumentRegistrar = artifacts.require("DocumentRegistrar");
+const PropertyController = artifacts.require("./PropertyController.sol");
 const StorageManagerInterface = artifacts.require("StorageManager");
 const MultiSigWalletInterface = artifacts.require("MultiSigWallet");
 const AgentDeed = artifacts.require("AgentDeed");
@@ -49,15 +50,16 @@ const Contracts = {
         MultiSigWallet: "0x7453b6206770bd525b9b0ba49d88273dcf2706f2"
     },
     Test: {
-        // Storage: Storage.address,
-        // Crate: "DocumentRegistry",
-        // CompanyWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
-        // NetworkWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
-        // Token: "0x60a954bb1e592785c75823ff961ff917d898044a",
-        // RolesLibrary: RolesLibrary.address,
-        // ProxyFactory: ProxyFactory.address,
-        // StorageManager: StorageManager.address,
-        // MultiSigWallet: MultiSigWalletInterface.address
+        Storage: Storage.address,
+        Crate: "DocumentRegistry",
+        CompanyWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
+        NetworkWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
+        Token: "0x60a954bb1e592785c75823ff961ff917d898044a",
+        RolesLibrary: RolesLibrary.address,
+        ProxyFactory: ProxyFactory.address,
+        StorageManager: StorageManager.address,
+        MultiSigWallet: MultiSigWalletInterface.address,
+        Controller: PropertyController.address
     }
 };
 
@@ -107,8 +109,8 @@ module.exports = (deployer, network) => {
         .then(() => agent.setName("PropyTitleDeedAgent"))
         .then(() => agent.forceChangeContractOwnership(MultiSigWalletInterface.address))
         .then(() => {
-            console.log("DocumentRegistry(Proxy): " + registry.address);
-            console.log("AgentDeed(Proxy): " + agent.address);
-            throw("Deploying correctly interrupted");
+            console.log(registry.address + ": DocumentRegistry(Proxy)");
+            console.log(agent.address+ ": AgentDeed(Proxy)");
+            // throw("Deploying correctly interrupted");
         })
 };

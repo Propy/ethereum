@@ -44,15 +44,15 @@ const Contracts = {
         MultiSigWallet: "0x7453b6206770bd525b9b0ba49d88273dcf2706f2"
     },
     Test: {
-        // Storage: Storage.address,
-        // Crate: "DocumentRegistry",
-        // CompanyWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
-        // NetworkWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
-        // Token: "0x60a954bb1e592785c75823ff961ff917d898044a",
-        // RolesLibrary: RolesLibrary.address,
-        // ProxyFactory: ProxyFactory.address,
-        // StorageManager: StorageManager.address,
-        // MultiSigWallet: MultiSigWalletInterface.address
+        Storage: Storage.address,
+        Crate: "DocumentRegistry",
+        CompanyWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
+        NetworkWallet: "0xb0904e024678e8495186e778c487af9a00d754f2",
+        Token: "0x60a954bb1e592785c75823ff961ff917d898044a",
+        RolesLibrary: RolesLibrary.address,
+        ProxyFactory: ProxyFactory.address,
+        StorageManager: StorageManager.address,
+        MultiSigWallet: MultiSigWalletInterface.address
     }
 };
 
@@ -84,7 +84,7 @@ module.exports = (deployer, network, accounts) => {
         .then(() => MultiSigWalletInterface.at(contracts.MultiSigWallet))
         .then(() => deployer.deploy(AgentDeed, "0x0", "0x0"))
         .then(() => {
-            console.log("DocumentRegistry: " + DocumentRegistry.address);
-            console.log("AgentDeed: " + AgentDeed.address);
+            console.log(DocumentRegistry.address + ": DocumentRegistry");
+            console.log(AgentDeed.address + ": AgentDeed");
         });
 };

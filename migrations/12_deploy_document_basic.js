@@ -25,8 +25,8 @@ module.exports = (deployer, network) => {
         .then(() => deployer.deploy(GrantDeedDocument, "", ""))
         .then(() => deployer.deploy(FeeCalc, fee))
         .then(() => {
-            console.log("BaseDocument: " + BaseDocument.address);
-            console.log("GrantDeedDocument: " + GrantDeedDocument.address);
-            console.log("FeeCalc: " + FeeCalc.address);
+            console.log(BaseDocument.address+ ": BaseDocument");
+            console.log(GrantDeedDocument.address+ ": GrantDeedDocument");
+            console.log(FeeCalc.address+ ": FeeCalc");
         });
 };

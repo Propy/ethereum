@@ -5,7 +5,7 @@ import "./EscrowBase.sol";
 
 contract EscrowEtherI is EscrowBase {
 
-    function EscrowEtherI(address _metaDeed, address _deed) EscrowBase(_metaDeed, _deed) {}
+    constructor(address _metaDeed, address _deed) EscrowBase(_metaDeed, _deed) public {}
 
     // NOTE: Insist on increasing gas limit when sending ether here.
     function() public payable {
