@@ -22,7 +22,7 @@
     "@types/jasmine": "~2.5.53",
     "@types/jasminewd2": "~2.0.2",
     "@types/node": "~6.0.60",
-    "axios": "^0.17.1",
+    "axios": "^0.19.0",
     "bluebird": "^3.5.1",
     "chai": "^4.1.2",
     "core-js": "^2.5.7",
