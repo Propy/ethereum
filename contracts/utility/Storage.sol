@@ -1,10 +1,10 @@
-pragma solidity 0.4.24;
+pragma solidity ^0.5.12;
 
 import "../base/Owned.sol";
 
 
 contract Manager {
-    function isAllowed(address _actor, bytes32 _role) constant public returns(bool);
+    function isAllowed(address _actor, bytes32 _role) view public returns(bool);
 }
 
 contract Storage is Owned {
@@ -37,7 +37,7 @@ contract Storage is Owned {
         crates[_crate].uints[_key] = _value;
     }
 
-    function getUInt(bytes32 _crate, bytes32 _key) constant public returns(uint) {
+    function getUInt(bytes32 _crate, bytes32 _key) view public returns(uint) {
         return crates[_crate].uints[_key];
     }
 
@@ -45,7 +45,7 @@ contract Storage is Owned {
         crates[_crate].uint8s[_key] = _value;
     }
 
-    function getUInt8(bytes32 _crate, bytes32 _key) constant public returns(uint8) {
+    function getUInt8(bytes32 _crate, bytes32 _key) view public returns(uint8) {
         return crates[_crate].uint8s[_key];
     }
 
@@ -53,7 +53,7 @@ contract Storage is Owned {
         crates[_crate].ints[_key] = _value;
     }
 
-    function getInt(bytes32 _crate, bytes32 _key) constant public returns(int) {
+    function getInt(bytes32 _crate, bytes32 _key) view public returns(int) {
         return crates[_crate].ints[_key];
     }
 
@@ -61,7 +61,7 @@ contract Storage is Owned {
         crates[_crate].addresses[_key] = _value;
     }
 
-    function getAddress(bytes32 _crate, bytes32 _key) constant public returns(address) {
+    function getAddress(bytes32 _crate, bytes32 _key) view public returns(address) {
         return crates[_crate].addresses[_key];
     }
 
@@ -69,7 +69,7 @@ contract Storage is Owned {
         crates[_crate].bools[_key] = _value;
     }
 
-    function getBool(bytes32 _crate, bytes32 _key) constant public returns(bool) {
+    function getBool(bytes32 _crate, bytes32 _key) view public returns(bool) {
         return crates[_crate].bools[_key];
     }
 
@@ -77,7 +77,7 @@ contract Storage is Owned {
         crates[_crate].bytes32s[_key] = _value;
     }
 
-    function getBytes32(bytes32 _crate, bytes32 _key) constant public returns(bytes32) {
+    function getBytes32(bytes32 _crate, bytes32 _key) view public returns(bytes32) {
         return crates[_crate].bytes32s[_key];
     }
 

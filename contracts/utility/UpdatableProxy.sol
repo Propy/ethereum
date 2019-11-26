@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity ^0.5.12;
 
 contract UpdatableProxy {
 
@@ -24,7 +24,7 @@ contract UpdatableProxy {
         }
     }
 
-    function () public payable {
+    function () external payable {
         assembly {
             let freememstart := msize()
             calldatacopy(freememstart, 0, calldatasize)

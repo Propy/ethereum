@@ -1,4 +1,4 @@
-pragma solidity 0.4.24;
+pragma solidity ^0.5.12;
 
 import "../base/Owned.sol";
 
@@ -28,7 +28,7 @@ contract StorageManager is Owned {
         return true;
     }
 
-    function isAllowed(address _actor, bytes32 _role) public constant returns(bool) {
+    function isAllowed(address _actor, bytes32 _role) public view returns(bool) {
         return approvedContracts[_actor][_role];
     }
 
@@ -41,3 +41,4 @@ contract StorageManager is Owned {
     // FIXME: Add maintenance mode
 
 }
+
