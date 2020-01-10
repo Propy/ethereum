@@ -1,7 +1,7 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
-import "./helpers/SafeMath.sol";
-import "./base/Owned.sol";
+import "./SafeMath.sol";
+import "./Owned.sol";
 
 
 contract FeeCalc is Owned {
@@ -11,22 +11,22 @@ contract FeeCalc is Owned {
     uint256 baseFee;  // FIXME
     //uint8 servifeFeeDivider;
 
-    function FeeCalc(uint256 _baseFee) {
+    constructor (uint256 _baseFee) public {
         baseFee = _baseFee;  // FIXME
         //servifeFeeDivider = 5;  // FIXME
     }
 
     //
 
-    function getFee(uint256 _price) public constant returns(uint256) {
+    function getFee(uint256 _price) public view returns(uint256) {
         return baseFee;  // FIXME
     }
 
-    function getCompanyFee(uint256 _price) public constant returns (uint256) {
+    function getCompanyFee(uint256 _price) public view returns (uint256) {
         return getFee(_price).div(3);
     }
 
-    function getNetworkGrowthFee(uint256 _price) public constant returns (uint256) {
+    function getNetworkGrowthFee(uint256 _price) public view returns (uint256) {
         return getFee(_price).sub(getCompanyFee(_price));
     }
 

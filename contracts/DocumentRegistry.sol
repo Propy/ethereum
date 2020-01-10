@@ -1,9 +1,9 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
-import "./utility/Storage.sol";
-import "./adapters/StorageAdapter.sol";
-import "./adapters/RolesLibraryAdapter.sol";
-import "./disposable/document/BaseDocument.sol";
+import "./Storage.sol";
+import "./StorageAdapter.sol";
+import "./RolesLibraryAdapter.sol";
+import "./BaseDocument.sol";
 
 contract DocumentRegistry is StorageAdapter, RolesLibraryAdapter {
 
@@ -14,8 +14,10 @@ contract DocumentRegistry is StorageAdapter, RolesLibraryAdapter {
 
     StorageInterface.Bytes32AddressMapping documents;
     StorageInterface.StringAddressSetMapping tags;
+    StorageInterface.AddressBytes32Bytes32Mapping documentsv2;
 
     event DocumentRegistered(address _document, bytes32 _hash, bytes32 _type);
+    event DocumentRegisteredv2(bytes32 _hash, bytes32 _metahash);
     event Error(string _message);
 
     modifier isDocumentFinalized(BaseDocument _document) {
@@ -34,7 +36,7 @@ contract DocumentRegistry is StorageAdapter, RolesLibraryAdapter {
         address _feeCalc,
         address _token,
         address _rolesLibrary
-    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
+    ) public StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
         companyWallet = _companyWallet;
         networkGrowthPoolWallet = _networkGrowthPoolWallet;
         feeCalc = _feeCalc;
@@ -61,6 +63,7 @@ contract DocumentRegistry is StorageAdapter, RolesLibraryAdapter {
         token = _token;
         documents.init("RegisteredDocuments");
         tags.init("ContainsTagDocuments");
+        documentsv2.init("RegisteredDocumentsv2");
     }
 
     function setWallets(address _companyWallet, address _networkGrowthPoolWallet) public auth {
@@ -85,12 +88,30 @@ contract DocumentRegistry is StorageAdapter, RolesLibraryAdapter {
         return store.get(documents, _hash);
     }
 
-    function getDocumentsByTag(string _tag) public view returns(address[]) {
+    function getDocumentsByTag(string memory _tag) public view returns(address[] memory) {
         return store.get(tags, _tag);
     }
 
     function exists(bytes32 _hash) public view returns(bool) {
         return store.get(documents, _hash) != address(0);
+    }
+    
+    // Access methods for version 2 (only hash)
+    // Here we don't deploy contract for document but just store physical(electronic) document hash
+    // and metadata hash which is just JSON with all the data related to registration.
+    
+    function registerv2(bytes32 _hash, bytes32 _metahash) public auth {
+        require(!existsv2(_hash), "Document already exists!");
+        store.set(documentsv2, address(0), _hash, _metahash);
+        emit DocumentRegisteredv2(_hash, _metahash);
+    }
+    
+     function existsv2(bytes32 _hash) public view returns(bool) {
+        return store.get(documentsv2, address(0), _hash) != bytes32(0);
+    }
+    
+    function getMetahash(bytes32 _hash) public view returns(bytes32) {
+        return store.get(documentsv2, address(0), _hash);
     }
 
 }

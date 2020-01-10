@@ -1,9 +1,9 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
-import "./adapters/StorageAdapter.sol";
-import "./base/AddressChecker.sol";
-import './adapters/MultiEventsHistoryAdapter.sol';
-import "./adapters/RolesLibraryAdapter.sol";
+import "./StorageAdapter.sol";
+import "./AddressChecker.sol";
+import './MultiEventsHistoryAdapter.sol';
+import "./RolesLibraryAdapter.sol";
 
 
 contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, MultiEventsHistoryAdapter {
@@ -38,7 +38,6 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
         }
     }
 
-
     /// CONSTRUCTOR ///
 
     constructor(
@@ -63,7 +62,7 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
     /// SETTINGS ///
 
     function setupEventsHistory(address _eventsHistory) auth public returns(bool) {
-        if (getEventsHistory() != 0x0) {
+        if (getEventsHistory() != address(0)) {
             return false;
         }
         _setEventsHistory(_eventsHistory);
@@ -155,13 +154,13 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
 
     /// GETTERS ///
 
-    function roleExists(uint _role) public constant returns(bool) {
+    function roleExists(uint _role) public view returns(bool) {
         return store.get(roles, _role);
     }
 
     function getUser(address _user)
         public
-        constant
+        view
         onlyWithRole(_user)
     returns(bytes32, bytes32, uint, address) {
         return (
@@ -174,20 +173,20 @@ contract UsersRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, M
 
     function getMe()
         public
-        constant
+        view
     returns(bytes32, bytes32, uint, address) {
         return getUser(msg.sender);
     }
 
-    function getWallet(address _user) public constant onlyWithRole(_user) returns(address) {
+    function getWallet(address _user) public view onlyWithRole(_user) returns(address) {
         return store.get(wallet, _user);
     }
 
-    function getUserRole(address _user) public constant returns(uint) {
+    function getUserRole(address _user) public view returns(uint) {
         return store.get(role, _user);
     }
 
-    function hasRole(address _user, uint _role) public constant returns(bool) {
+    function hasRole(address _user, uint _role) public view returns(bool) {
         return store.get(role, _user) == _role;
     }
 

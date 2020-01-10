@@ -1,8 +1,11 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
 
 // For testing purposes.
 contract TokenMock {
+    
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed from, address indexed spender, uint256 value);
 
     mapping(address => uint) public balanceOf;
 
@@ -14,28 +17,29 @@ contract TokenMock {
     bool public approvalMode;
     bool public maintenanceMode;
 
-    function mint(address _to, uint _value) {
+    function mint(address _to, uint _value) public {
         balanceOf[_to] += _value;
     }
 
-    function enableApproval() {
+    function enableApproval() public {
         approvalMode = true;
     }
 
-    function disableApproval() {
+    function disableApproval() public {
         approvalMode = false;
     }
 
-    function enableMaintenance() {
+    function enableMaintenance() public {
         maintenanceMode = true;
     }
 
-    function disableMaintenance() {
+    function disableMaintenance() public {
         maintenanceMode = false;
     }
 
-    function approve(address _spender, uint _amount) returns (bool success) {
+    function approve(address _spender, uint256 _amount) public returns (bool success) {
         allowed[msg.sender][_spender] = _amount;
+        emit Approval(msg.sender, _spender, _amount);
         return true;
     }
 
@@ -53,16 +57,17 @@ contract TokenMock {
         _;
     }
 
-    function transfer(address _to, uint _value)
+    function transfer(address _to, uint256 _value) public
         maintenance()
         enoughCoins(msg.sender, _value)
     returns(bool) {
         balanceOf[msg.sender] -= feeFromPayer ? _value + fee : _value;
         balanceOf[_to] += feeFromPayer ? _value : _value - fee;
+        emit Transfer(msg.sender, _to, _value);
         return true;
     }
 
-    function transferFrom(address _from, address _to, uint _value)
+    function transferFrom(address _from, address _to, uint _value) public
         maintenance()
         enoughCoins(_from, _value)
     returns(bool) {
@@ -80,11 +85,11 @@ contract TokenMock {
         }
     }
 
-    function setFee(uint _value) {
+    function setFee(uint _value) public {
         fee = _value;
     }
 
-    function setFeeFromPayer() {
+    function setFeeFromPayer() public{
         feeFromPayer = true;
     }
 }

@@ -1,7 +1,7 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
-import "./helpers/SafeMath.sol";
-import "./base/Owned.sol";
+import "./SafeMath.sol";
+import "./Owned.sol";
 
 
 contract DocumentFeeCalc is Owned {
@@ -14,7 +14,7 @@ contract DocumentFeeCalc is Owned {
         baseFee = _baseFee;
     }
 
-    function getFee() public constant returns(uint256) {
+    function getFee() public view returns(uint256) {
         return baseFee;
     }
 
@@ -31,3 +31,4 @@ contract DocumentFeeCalc is Owned {
     }
 
 }
+

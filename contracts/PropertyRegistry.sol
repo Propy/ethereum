@@ -1,9 +1,9 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
-import './adapters/MultiEventsHistoryAdapter.sol';
-import "./adapters/RolesLibraryAdapter.sol";
-import "./adapters/StorageAdapter.sol";
-import "./base/AddressChecker.sol";
+import './MultiEventsHistoryAdapter.sol';
+import "./RolesLibraryAdapter.sol";
+import "./StorageAdapter.sol";
+import "./AddressChecker.sol";
 
 
 contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryAdapter, RolesLibraryAdapter {
@@ -40,7 +40,7 @@ contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryA
     /// SETTINGS ///
 
     function setupEventsHistory(address _eventsHistory) auth public returns(bool) {
-      if (getEventsHistory() != 0x0) {
+      if (getEventsHistory() != address(0)) {
           return false;
       }
       _setEventsHistory(_eventsHistory);
@@ -103,27 +103,27 @@ contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryA
 
     /// GETTERS ///
 
-    function relevant(address _property) public constant returns(bool) {
+    function relevant(address _property) public view returns(bool) {
         return store.get(propertyExists, _property);
     }
 
-    function obsolete(address _property) constant public returns(bool) {
+    function obsolete(address _property) view public returns(bool) {
         return store.includes(obsoleteContracts, _property);
     }
 
-    function includes(address _property) constant public returns(bool) {
+    function includes(address _property) view public returns(bool) {
         return store.includes(relevantContracts, _property);
     }
 
-    function count() constant public returns(uint256) {
+    function count() view public returns(uint256) {
         return store.count(relevantContracts);
     }
 
-    function getAllRelevant() public constant returns(address[]) {
+    function getAllRelevant() public view returns(address[] memory) {
         return store.get(relevantContracts);
     }
 
-    function getAllObsolete() public constant returns(address[]) {
+    function getAllObsolete() public view returns(address[] memory) {
         return store.get(obsoleteContracts);
     }
 
@@ -155,3 +155,4 @@ contract PropertyRegistry is AddressChecker, StorageAdapter, MultiEventsHistoryA
     // FIXME: Add maintenance mode
 
 }
+

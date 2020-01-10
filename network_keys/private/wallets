@@ -1,6 +1,7 @@
 module.exports = {
-    Rinkeby: "your private key",
+    Rinkeby: "95d57ee92253cde88857666f7e282f986dc9186831df5929da941726ebe3eb95",
     Mainnet: "your private key",
     Ropsten: "your private key",
-    Kovan: "your private key"
+    Kovan: "your private key",
+    Local: "b5b1870957d373ef0eeffecc6e4812c0fd08f554b37b233526acc331bf1544f7"
 };

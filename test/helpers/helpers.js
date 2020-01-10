@@ -6,7 +6,7 @@ const assert = require('chai').assert;
 const ethUtil = require('ethereumjs-util');
 
 //var SolidityCoder = require("web3/lib/solidity/coder.js");
-const SolidityEvent = require("web3/lib/web3/event.js");
+//const SolidityEvent = require("web3/lib/web3/event.js");
 
 
 function getAllProperties(obj) {

@@ -1,8 +1,8 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
-import "./base/AddressChecker.sol";
-import "./adapters/MultiEventsHistoryAdapter.sol";
-import "./adapters/RolesLibraryAdapter.sol";
+import "./AddressChecker.sol";
+import "./MultiEventsHistoryAdapter.sol";
+import "./RolesLibraryAdapter.sol";
 
 
 contract PropertyInterface {
@@ -18,8 +18,8 @@ contract PropertyProxy is RolesLibraryAdapter, AddressChecker, MultiEventsHistor
     constructor(
         address _controller,
         address _rolesLibrary
-    ) RolesLibraryAdapter(_rolesLibrary) 
-    public 
+    ) RolesLibraryAdapter(_rolesLibrary)
+    public
     {
         assert(_controller != address(0) && _rolesLibrary != address(0));
         controller = _controller;
@@ -28,7 +28,7 @@ contract PropertyProxy is RolesLibraryAdapter, AddressChecker, MultiEventsHistor
     /// SETTINGS ///
 
     function setupEventsHistory(address _eventsHistory) public auth returns(bool) {
-        if (getEventsHistory() != 0x0) {
+        if (getEventsHistory() != address(0)) {
             return false;
         }
         _setEventsHistory(_eventsHistory);
@@ -88,3 +88,4 @@ contract PropertyProxy is RolesLibraryAdapter, AddressChecker, MultiEventsHistor
     // FIXME: Add maintenance mode
 
 }
+

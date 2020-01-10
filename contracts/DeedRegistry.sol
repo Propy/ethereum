@@ -1,9 +1,9 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
-import "./adapters/StorageAdapter.sol";
-import "./base/AddressChecker.sol";
-import './adapters/MultiEventsHistoryAdapter.sol';
-import "./adapters/RolesLibraryAdapter.sol";
+import "./StorageAdapter.sol";
+import "./AddressChecker.sol";
+import './MultiEventsHistoryAdapter.sol';
+import "./RolesLibraryAdapter.sol";
 
 
 contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, MultiEventsHistoryAdapter {
@@ -26,7 +26,7 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
         bytes32 _crate,
         address _controller,
         address _rolesLibrary
-    ) StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
+    ) public StorageAdapter(_store, _crate) RolesLibraryAdapter(_rolesLibrary) {
         assert(_controller != address(0));
         controller = _controller;
 
@@ -38,7 +38,7 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
     /// SETTINGS ///
 
     function setupEventsHistory(address _eventsHistory) auth public returns(bool) {
-        if (getEventsHistory() != 0x0) {
+        if (getEventsHistory() != address(0)) {
             return false;
         }
         _setEventsHistory(_eventsHistory);
@@ -48,7 +48,7 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
     function setController(address _controller)
         auth
         notNull(_controller)
-        public 
+        public
     returns(bool) {
         if (controller == _controller) {
             _emitError("Attempt to change to the same value");
@@ -90,19 +90,19 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
 
     /// GETTERS ///
 
-    function registered(address _deed) public constant returns(bool) {
+    function registered(address _deed) public view returns(bool) {
         return store.get(deedExists, _deed);
     }
 
-    function includes(address _deed) constant returns(bool) {
+    function includes(address _deed) public view returns(bool) {
         return store.includes(allDeeds, _deed);
     }
 
-    function count() constant returns(uint256) {
+    function count() public view returns(uint256) {
         return store.count(allDeeds);
     }
 
-    function getAll() public constant returns(address[]) {
+    function getAll() public view returns(address[] memory) {
         return store.get(allDeeds);
     }
 
@@ -117,12 +117,12 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
         DeedRegistry(getEventsHistory()).emitDeedRemoved(_deed);
     }
 
-    function emitDeedRegistered(address _deed) {
-        DeedRegistered(_self(), _deed);
+    function emitDeedRegistered(address _deed) public{
+        emit DeedRegistered(_self(), _deed);
     }
 
-    function emitDeedRemoved(address _deed) {
-        DeedRemoved(_self(), _deed);
+    function emitDeedRemoved(address _deed) public {
+        emit DeedRemoved(_self(), _deed);
     }
 
     /// RESTRICTIONS & DISASTER RECOVERY ///
@@ -134,3 +134,4 @@ contract DeedRegistry is RolesLibraryAdapter, AddressChecker, StorageAdapter, Mu
     // FIXME: Add maintenance mode
 
 }
+

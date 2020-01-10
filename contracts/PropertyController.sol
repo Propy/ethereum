@@ -1,13 +1,13 @@
-pragma solidity 0.4.24;
+pragma solidity 0.5.8;
 
 
-import "./base/AddressChecker.sol";
-import "./adapters/MultiEventsHistoryAdapter.sol";
-import "./adapters/RolesLibraryAdapter.sol";
+import "./AddressChecker.sol";
+import "./MultiEventsHistoryAdapter.sol";
+import "./RolesLibraryAdapter.sol";
 
 
 contract PropertyFactoryInterface {
-    function createProperty(address, address, string, string, uint8, uint256) public returns(address);
+    function createProperty(address, address, string memory, string memory, uint8, uint256) public returns(address);
 }
 
 
@@ -37,7 +37,7 @@ contract PropertyInterface {
 
 
 contract DeedInterface {
-    function reserve(address, uint256, address, address, address, address[], uint256[]) public returns(bool);
+    function reserve(address, uint256, address, address, address, address[] memory, uint256[] memory) public returns(bool);
     function approve() public returns(bool);
     function changeIntermediary(uint, address) public returns(bool);
     function metaDeed() public returns(address);
@@ -82,7 +82,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
         address _usersRegistry,
         address _tokenAddress,
         address _feeCalc
-    ) RolesLibraryAdapter(_rolesLibrary) {
+    ) public RolesLibraryAdapter(_rolesLibrary) {
         propertyProxy = _propertyProxy;
         propertyFactory = _propertyFactory;
         propertyRegistry = _propertyRegistry;
@@ -96,7 +96,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     /// SETTINGS ///
 
     function setupEventsHistory(address _eventsHistory) public auth returns(bool) {
-        if (getEventsHistory() != 0x0) {
+        if (getEventsHistory() != address(0)) {
             return false;
         }
         _setEventsHistory(_eventsHistory);
@@ -106,7 +106,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setPropertyProxy(address _propertyProxy)
         auth
         notNull(_propertyProxy)
-        public 
+        public
     returns(bool) {
         _emitServiceChanged("PropertyProxy", propertyProxy, _propertyProxy);
         propertyProxy = _propertyProxy;
@@ -116,6 +116,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setPropertyFactory(address _propertyFactory)
         auth
         notNull(_propertyFactory)
+        public
     returns(bool) {
         _emitServiceChanged("PropertyFactory", propertyFactory, _propertyFactory);
         propertyFactory = _propertyFactory;
@@ -125,7 +126,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setPropertyRegistry(address _propertyRegistry)
         auth
         notNull(_propertyRegistry)
-        public 
+        public
     returns(bool) {
         _emitServiceChanged("PropertyRegistry", propertyRegistry, _propertyRegistry);
         propertyRegistry = _propertyRegistry;
@@ -135,7 +136,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setDeedRegistry(address _deedRegistry)
         auth
         notNull(_deedRegistry)
-        public 
+        public
     returns(bool) {
         _emitServiceChanged("DeedRegistry", deedRegistry, _deedRegistry);
         deedRegistry = _deedRegistry;
@@ -145,6 +146,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setUsersRegistry(address _usersRegistry)
         auth
         notNull(_usersRegistry)
+        public
     returns(bool) {
         _emitServiceChanged("UsersRegistry", usersRegistry, _usersRegistry);
         usersRegistry = _usersRegistry;
@@ -154,7 +156,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setToken(address _token)
         auth
         notNull(_token)
-        public 
+        public
     returns(bool) {
         _emitServiceChanged("Token", token, _token);
         token = _token;
@@ -164,7 +166,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     function setFeeCalc(address _feeCalc)
         auth
         notNull(_feeCalc)
-        public 
+        public
     returns(bool) {
         _emitServiceChanged("FeeCalc", feeCalc, _feeCalc);
         feeCalc = _feeCalc;
@@ -176,7 +178,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
         address _networkGrowthPoolWallet
     )
         auth
-        public 
+        public
     returns(bool) {
         require(_companyWallet != address(0) && _networkGrowthPoolWallet != address(0));
         companyWallet = _companyWallet;
@@ -193,7 +195,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     // CREATE / REGISTER //
 
     function createAndRegisterProperty(
-        address _previousVersion, address _owner, string _name, string _physicalAddress, uint8 _areaType, uint256 _area
+        address _previousVersion, address _owner, string memory _name, string memory _physicalAddress, uint8 _areaType, uint256 _area
     )
         public
         auth
@@ -207,7 +209,7 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     }
 
     function _createProperty(
-        address _previousVersion, address _owner, string _name, string _physicalAddress, uint8 _areaType, uint256 _area
+        address _previousVersion, address _owner, string memory _name, string memory _physicalAddress, uint8 _areaType, uint256 _area
     )
         internal
     returns(address) {
@@ -260,8 +262,8 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
         address _seller,
         address _buyer,
         address _escrow,
-        address[] _intermediaries,
-        uint256[] _payments
+        address[] memory _intermediaries,
+        uint256[] memory _payments
     )
         public
         auth
@@ -362,3 +364,4 @@ contract PropertyController is RolesLibraryAdapter, MultiEventsHistoryAdapter {
     // TODO: Add maintenance mode
 
 }
+
