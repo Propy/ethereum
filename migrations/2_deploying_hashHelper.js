@@ -25,6 +25,7 @@ const RolesLibrary = artifacts.require('./RolesLibrary.sol');
 const MultiSigWallet = artifacts.require('./MultiSigWallet.sol');
 const AgentDeed = artifacts.require('./AgentDeed.sol');
 const ProxyFactory = artifacts.require('./ProxyFactory.sol');
+const Agent = artifacts.require('./Agent.sol');
 
 // Title Deed registration
 const PoolClonable = artifacts.require('./PoolClonable');
@@ -54,7 +55,9 @@ const allContracts = [
     PoolClonable,
     DoubleSigner,
     AgentDeed,
-    ProxyFactory
+    ProxyFactory,
+    // Private Registry specific
+    Agent
 ];
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -249,6 +252,9 @@ module.exports = async (deployer, network, accounts) => {
             .then(() => deedRegistry.setupEventsHistory(MultiEventsHistory.address))
             .then(() => usersRegistry.setupEventsHistory(MultiEventsHistory.address))
 
+            // SETUP PRIVATE RIGESTRY AGENT CONTRACT
+            .then(() => deployer.deploy(Agent, DocumentRegistry.address, OWNER, OWNER))
+
 
             // GIVE ACCESS TO STORAGE
             .then(() => {
@@ -256,6 +262,7 @@ module.exports = async (deployer, network, accounts) => {
                     storageManager.giveAccess(PropertyRegistry.address, web3.utils.sha3("PropertyRegistry")),
                     storageManager.giveAccess(DeedRegistry.address, web3.utils.sha3("DeedRegistry")),
                     storageManager.giveAccess(UsersRegistry.address, web3.utils.sha3("UsersRegistry")),
+                    storageManager.giveAccess(DocumentRegistry.address, web3.utils.sha3("DocumentRegistry"))
                 ]);
             })
             // .then(results => {
